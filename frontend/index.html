@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>DownZaro • Red Noir Universal Media Downloader</title>
+    <meta name="description" content="Clean, fast, and secure media downloader for YouTube, Instagram, TikTok, Facebook, X, Reddit, Vimeo, and 1000+ platforms. Save in 4K, 1080p, 320k MP3." />
+    
+    <!-- PWA Web App Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="background-color" content="#000000" />
+
+    <!-- Apple iOS / iPadOS Web App Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DownZaro" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/icon-192.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="DownZaro • Universal Media Downloader" />
+    <meta property="og:description" content="Download 4K videos, 320k MP3s, and thumbnails across 1,000+ platforms effortlessly." />
+    <meta property="og:type" content="website" />
+
+    <!-- Zero-flash inline dark theme loader script -->
+    <script>
+      (function() {
+        document.documentElement.classList.add('dark');
+        document.documentElement.style.colorScheme = 'dark';
+      })();
+    </script>
+  </head>
+  <body class="bg-black text-white antialiased selection-red">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Register PWA Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.log('SW registration failed:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
+

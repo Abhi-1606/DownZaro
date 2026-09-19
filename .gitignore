@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Environment Variables
+.env
+.env.local
+
+# Build Outputs
+dist/
+build/
+*.egg-info/
+
+# Temp Downloads & Cache
+downloads/
+temp/
+/tmp/downzaro_downloads
+*.part
+*.ytdl
+
+# Logs & Tests
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS & IDE
+.DS_Store
+.vscode/
+.idea/
