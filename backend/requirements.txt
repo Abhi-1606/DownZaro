@@ -10,3 +10,5 @@ pytest>=8.0.0
 pytest-asyncio>=0.24.0
 imageio-ffmpeg>=0.5.1
 idna>=3.7
+yt-dlp-get-pot>=0.3.0
+bgutil-ytdlp-pot-provider>=2.0.0

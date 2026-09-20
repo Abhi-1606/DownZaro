@@ -81,6 +81,36 @@ def get_ffmpeg_binary_path() -> Optional[str]:
         logger.warning(f"Could not load bundled ffmpeg: {e}")
     return None
 
+def ensure_pot_provider_running() -> bool:
+    """
+    Checks if the local bgutil PO token provider (port 4416) is alive.
+    If not, attempts to start the container if Docker is installed.
+    """
+    import urllib.request
+    try:
+        req = urllib.request.Request("http://127.0.0.1:4416/ping", headers={"User-Agent": "DownZaro/1.0"})
+        with urllib.request.urlopen(req, timeout=1.5) as resp:
+            if resp.status in (200, 204):
+                return True
+    except Exception:
+        pass
+
+    docker_bin = shutil.which("docker")
+    if docker_bin:
+        try:
+            # Try starting existing container or run new
+            subprocess.run(["docker", "start", "bgutil-provider"], capture_output=True, timeout=5)
+            # Re-verify ping
+            req = urllib.request.Request("http://127.0.0.1:4416/ping", headers={"User-Agent": "DownZaro/1.0"})
+            with urllib.request.urlopen(req, timeout=2.0) as resp:
+                if resp.status in (200, 204):
+                    logger.info("✓ Started bgutil-provider Docker container on port 4416")
+                    return True
+        except Exception as e:
+            logger.debug(f"Could not automatically launch bgutil-provider: {e}")
+
+    return False
+
 def verify_system_dependencies() -> dict:
     """
     Checks that yt-dlp and ffmpeg/ffprobe exist and are executable.
@@ -88,6 +118,7 @@ def verify_system_dependencies() -> dict:
     """
     ytdlp_path = shutil.which("yt-dlp") or shutil.which("yt_dlp")
     ffmpeg_path = get_ffmpeg_binary_path()
+    pot_active = ensure_pot_provider_running()
 
     diagnostics = {
         "ytdlp_installed": False,
@@ -96,6 +127,7 @@ def verify_system_dependencies() -> dict:
         "ffmpeg_installed": False,
         "ffmpeg_version": None,
         "ffmpeg_path": ffmpeg_path,
+        "pot_provider_active": pot_active,
     }
 
     # Verify yt-dlp

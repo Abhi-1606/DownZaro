@@ -4,7 +4,6 @@ import {
   Mail,
   Lock,
   User,
-  KeyRound,
   Fingerprint,
   Sparkles,
   AlertCircle,
@@ -16,8 +15,8 @@ import {
   Trash2,
   ChevronRight,
   Laptop,
+  KeyRound,
   Phone,
-  Check,
 } from 'lucide-react';
 import { useAuth, getSavedAccounts, removeSavedAccountFromDevice, SavedAccount } from '../../hooks/useAuth';
 
@@ -37,7 +36,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   limitReachedNotice = false,
 }) => {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(initialMode);
-  const [loginMethod, setLoginMethod] = useState<'password' | 'otp' | 'passkey'>('password');
+  const [loginMethod, setLoginMethod] = useState<'password' | 'passkey'>('password');
   const [showGoogleChooser, setShowGoogleChooser] = useState(false);
   const [showDevicePicker, setShowDevicePicker] = useState(false);
   const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
@@ -60,27 +59,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [dbAccounts, setDbAccounts] = useState<SavedAccount[]>([]);
   const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
 
-  // OTP Channel State for Sign In
-  const [otpTarget, setOtpTarget] = useState('');
-  const [selectedOtpChannel, setSelectedOtpChannel] = useState<'email' | 'phone'>('email');
-  const [discoveredChannels, setDiscoveredChannels] = useState<{
-    found: boolean;
-    name?: string;
-    email?: string;
-    masked_email?: string;
-    phone?: string;
-    masked_phone?: string;
-    has_email?: boolean;
-    has_phone?: boolean;
-  } | null>(null);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [devOtpCode, setDevOtpCode] = useState<string | null>(null);
-  const [resendCooldown, setResendCooldown] = useState(0);
-
   // Forgot Password State
   const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [forgotChannel, setForgotChannel] = useState<'email' | 'phone'>('email');
   const [forgotDiscovered, setForgotDiscovered] = useState<{
     found: boolean;
     name?: string;
@@ -95,6 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [forgotOtpCode, setForgotOtpCode] = useState('');
   const [forgotDevOtpCode, setForgotDevOtpCode] = useState<string | null>(null);
   const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Quick Device Email State
   const [quickDeviceEmail, setQuickDeviceEmail] = useState('');
@@ -137,11 +118,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setShowDevicePicker(false);
       setShowCustomGoogleInput(false);
       setIsSubmitting(false);
-      setOtpSent(false);
       setForgotOtpSent(false);
-      setDevOtpCode(null);
       setForgotDevOtpCode(null);
-      setDiscoveredChannels(null);
       setForgotDiscovered(null);
 
       // Load all registered user accounts from backend
@@ -312,98 +290,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSavedAccounts(getSavedAccounts());
   };
 
-  // 6. OTP Login: Channel Lookup & Request
-  const handleLookupOtpChannels = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanTarget = (otpTarget || identifier).trim();
-    if (!cleanTarget) {
-      setError('Please enter your email, username, or phone number.');
-      return;
-    }
-    resetMessages();
-    setIsSubmitting(true);
-    try {
-      const channels = await auth.getOtpChannels(cleanTarget);
-      setDiscoveredChannels(channels);
-      // Auto select first available channel
-      if (channels.has_email && !channels.has_phone) {
-        setSelectedOtpChannel('email');
-      } else if (!channels.has_email && channels.has_phone) {
-        setSelectedOtpChannel('phone');
-      }
-    } catch (err: any) {
-      setError(err.message || 'No account found with this identifier.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSendOtpWithChannel = async () => {
-    resetMessages();
-    const cleanTarget = (otpTarget || identifier).trim();
-    let finalDest = cleanTarget;
-    if (discoveredChannels?.found) {
-      if (selectedOtpChannel === 'email' && discoveredChannels.email) {
-        finalDest = discoveredChannels.email;
-      } else if (selectedOtpChannel === 'phone' && discoveredChannels.phone) {
-        finalDest = discoveredChannels.phone;
-      }
-    }
-
-    setIsSubmitting(true);
-    try {
-      const res = await auth.requestOtp(finalDest, 'login', selectedOtpChannel);
-      setOtpSent(true);
-      setResendCooldown(30);
-      if (res.dev_code) {
-        setDevOtpCode(res.dev_code);
-        setOtpCode(res.dev_code); // auto-fill for frictionless local development
-      } else {
-        setDevOtpCode(null);
-      }
-      setSuccess(
-        res.message ||
-          `6-digit verification OTP dispatched to your ${selectedOtpChannel === 'email' ? 'Gmail / Email' : 'Mobile Number'}. Please check your inbox or messages.`
-      );
-    } catch (err: any) {
-      setError(err.message || 'Failed to dispatch OTP.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpCode.trim()) {
-      setError('Please enter the 6-digit OTP code.');
-      return;
-    }
-    resetMessages();
-    const finalDest =
-      discoveredChannels?.found && selectedOtpChannel === 'phone' && discoveredChannels.phone
-        ? discoveredChannels.phone
-        : (discoveredChannels?.email || otpTarget || identifier).trim();
-
-    setIsSubmitting(true);
-    try {
-      await auth.verifyOtp({
-        destination: finalDest,
-        code: otpCode.trim(),
-        purpose: 'login',
-      });
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Invalid or expired OTP code.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // 7. Forgot Password: Channel Lookup & Send OTP
+  // 6. Forgot Password: Lookup Account & Send Reset OTP to Email
   const handleForgotLookupChannels = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotIdentifier.trim()) {
-      setError('Please enter your registered email, username, or phone number.');
+      setError('Please enter your registered email or username.');
       return;
     }
     resetMessages();
@@ -411,11 +302,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const channels = await auth.getOtpChannels(forgotIdentifier.trim());
       setForgotDiscovered(channels);
-      if (channels.has_email && !channels.has_phone) {
-        setForgotChannel('email');
-      } else if (!channels.has_email && channels.has_phone) {
-        setForgotChannel('phone');
+      const targetEmail = (channels?.email || forgotIdentifier).trim();
+      const res = await auth.requestOtp(targetEmail, 'reset', 'email');
+      setForgotOtpSent(true);
+      setResendCooldown(30);
+      if (res.dev_code) {
+        setForgotDevOtpCode(res.dev_code);
+        setForgotOtpCode(res.dev_code);
+      } else {
+        setForgotDevOtpCode(null);
       }
+      setSuccess(
+        res.message ||
+          `6-digit reset code sent to ${channels?.masked_email || channels?.email || targetEmail}. Please check your inbox.`
+      );
     } catch (err: any) {
       setError(err.message || 'No account found with this identifier.');
     } finally {
@@ -425,29 +325,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleForgotSendOtp = async () => {
     resetMessages();
-    let finalDest = forgotIdentifier.trim();
-    if (forgotDiscovered?.found) {
-      if (forgotChannel === 'email' && forgotDiscovered.email) {
-        finalDest = forgotDiscovered.email;
-      } else if (forgotChannel === 'phone' && forgotDiscovered.phone) {
-        finalDest = forgotDiscovered.phone;
-      }
-    }
+    const finalDest = (forgotDiscovered?.email || forgotIdentifier).trim();
 
     setIsSubmitting(true);
     try {
-      const res = await auth.requestOtp(finalDest, 'reset', forgotChannel);
+      const res = await auth.requestOtp(finalDest, 'reset', 'email');
       setForgotOtpSent(true);
       setResendCooldown(30);
       if (res.dev_code) {
         setForgotDevOtpCode(res.dev_code);
-        setForgotOtpCode(res.dev_code); // auto-fill for frictionless local development
+        setForgotOtpCode(res.dev_code);
       } else {
         setForgotDevOtpCode(null);
       }
       setSuccess(
         res.message ||
-          `6-digit reset code sent to your ${forgotChannel === 'email' ? 'Gmail / Email' : 'Mobile Number'}. Please check your inbox or messages.`
+          `6-digit reset code sent to ${forgotDiscovered?.masked_email || forgotDiscovered?.email || finalDest}. Please check your inbox.`
       );
     } catch (err: any) {
       setError(err.message || 'Failed to send reset code.');
@@ -467,10 +360,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
     resetMessages();
-    const finalDest =
-      forgotDiscovered?.found && forgotChannel === 'phone' && forgotDiscovered.phone
-        ? forgotDiscovered.phone
-        : (forgotDiscovered?.email || forgotIdentifier).trim();
+    const finalDest = (forgotDiscovered?.email || forgotIdentifier).trim();
 
     setIsSubmitting(true);
     try {
@@ -850,12 +740,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {!forgotDiscovered ? (
-              /* Step 1: Identifier Input */
+            {!forgotOtpSent ? (
+              /* Step 1: Identifier Input & Send Reset Code */
               <form onSubmit={handleForgotLookupChannels} noValidate className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                    Enter Email, Username, or Mobile Number
+                    Enter Registered Email or Username
                   </label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -873,94 +763,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ef233c] to-[#d90429] hover:from-[#ff3b53] hover:to-[#ef233c] text-white text-sm font-bold font-manrope shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ef233c] to-[#d90429] hover:from-[#ff3b53] hover:to-[#ef233c] text-white text-sm font-bold font-manrope shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isSubmitting ? 'Checking Account...' : 'Continue to Select Channel →'}
+                  {isSubmitting ? 'Sending Reset Code...' : 'Send Reset Code to Email'}
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
-            ) : !forgotOtpSent ? (
-              /* Step 2: Choose Delivery Channel (Gmail vs Mobile) */
-              <div className="space-y-3">
-                <div className="p-3 rounded-2xl bg-zinc-900 border border-white/10">
-                  <span className="block text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 font-manrope">
-                    Where should we send your reset code?
-                  </span>
-
-                  <div className="grid grid-cols-1 gap-2">
-                    {/* Gmail / Email Option */}
-                    <button
-                      type="button"
-                      onClick={() => setForgotChannel('email')}
-                      className={`p-3 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                        forgotChannel === 'email'
-                          ? 'bg-[#ef233c]/15 border-[#ef233c] shadow-md'
-                          : 'bg-black/50 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center">
-                          <Mail className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <span>Gmail / Email</span>
-                            {forgotChannel === 'email' && <Check className="w-3.5 h-3.5 text-[#ef233c]" />}
-                          </div>
-                          <div className="text-[11px] text-zinc-400 font-mono">
-                            {forgotDiscovered.masked_email || forgotDiscovered.email || 'Registered Email'}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Mobile Phone Option */}
-                    <button
-                      type="button"
-                      onClick={() => setForgotChannel('phone')}
-                      className={`p-3 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                        forgotChannel === 'phone'
-                          ? 'bg-[#ef233c]/15 border-[#ef233c] shadow-md'
-                          : 'bg-black/50 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                          <Phone className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <span>Mobile Phone (SMS)</span>
-                            {forgotChannel === 'phone' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                          </div>
-                          <div className="text-[11px] text-zinc-400 font-mono">
-                            {forgotDiscovered.masked_phone || forgotDiscovered.phone || 'Registered Phone'}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setForgotDiscovered(null)}
-                    className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-zinc-300 font-semibold cursor-pointer"
-                  >
-                    Change Account
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleForgotSendOtp}
-                    disabled={isSubmitting}
-                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#ef233c] to-[#d90429] text-white text-xs font-bold shadow-lg cursor-pointer disabled:opacity-50"
-                  >
-                    {isSubmitting ? 'Sending...' : 'Send OTP Code'}
-                  </button>
-                </div>
-              </div>
             ) : (
-              /* Step 3: Enter OTP & New Password */
+              /* Step 2: Enter OTP & New Password */
               <form onSubmit={handleForgotResetPassword} noValidate className="space-y-3">
                 {forgotDevOtpCode && (
                   <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-1.5 animate-in fade-in duration-200">
@@ -986,9 +796,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-medium text-zinc-300">
-                      Enter 6-Digit OTP sent to your{' '}
+                      Enter 6-Digit OTP sent to{' '}
                       <strong className="text-white">
-                        {forgotChannel === 'email' ? 'Gmail / Email' : 'Mobile Phone'}
+                        {forgotDiscovered?.masked_email || forgotDiscovered?.email || forgotIdentifier || 'Email'}
                       </strong>
                     </label>
                     {resendCooldown > 0 ? (
@@ -1233,7 +1043,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       setLoginMethod('password');
                       resetMessages();
                     }}
-                    className={`px-3 py-1 rounded-full border transition-colors cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-full border transition-colors cursor-pointer ${
                       loginMethod === 'password'
                         ? 'bg-white/15 border-white/30 text-white font-semibold'
                         : 'border-white/5 text-zinc-400 hover:text-zinc-200'
@@ -1244,30 +1054,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setLoginMethod('otp');
-                      resetMessages();
-                    }}
-                    className={`px-3 py-1 rounded-full border transition-colors cursor-pointer ${
-                      loginMethod === 'otp'
-                        ? 'bg-white/15 border-white/30 text-white font-semibold'
-                        : 'border-white/5 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    OTP Code
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
                       setLoginMethod('passkey');
                       resetMessages();
                     }}
-                    className={`px-3 py-1 rounded-full border transition-colors cursor-pointer flex items-center gap-1 ${
+                    className={`px-3.5 py-1.5 rounded-full border transition-colors cursor-pointer flex items-center gap-1.5 ${
                       loginMethod === 'passkey'
                         ? 'bg-white/15 border-white/30 text-white font-semibold'
                         : 'border-white/5 text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
-                    <Fingerprint className="w-3 h-3 text-[#ef233c]" />
+                    <Fingerprint className="w-3.5 h-3.5 text-[#ef233c]" />
                     Passkey
                   </button>
                 </div>
@@ -1340,196 +1136,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </form>
-                )}
-
-                {/* 2. OTP SIGN IN WITH CHANNEL CHOICE (Email vs Phone) */}
-                {loginMethod === 'otp' && (
-                  <div className="space-y-3">
-                    {!discoveredChannels ? (
-                      /* Step 1: Input Account identifier */
-                      <form onSubmit={handleLookupOtpChannels} noValidate className="space-y-3">
-                        <div>
-                          <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                            Account Username, Email, or Mobile
-                          </label>
-                          <div className="relative">
-                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                            <input
-                              type="text"
-                              autoComplete="username email tel"
-                              value={otpTarget || identifier}
-                              onChange={(e) => setOtpTarget(e.target.value)}
-                              placeholder="e.g. iq.abhi or +91..."
-                              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white placeholder:text-zinc-600 text-sm focus:border-[#ef233c] focus:outline-none focus:ring-1 focus:ring-[#ef233c]/50 transition-colors"
-                            />
-                          </div>
-                        </div>
-                        <button
-                          type="submit"
-                          disabled={isSubmitting}
-                          className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ef233c] to-[#d90429] text-white text-sm font-bold font-manrope shadow-lg transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          {isSubmitting ? 'Checking Channels...' : 'Continue to Select Channel →'}
-                        </button>
-                      </form>
-                    ) : !otpSent ? (
-                      /* Step 2: Choose Channel (Gmail vs Mobile) */
-                      <div className="space-y-3">
-                        <div className="p-3 rounded-2xl bg-zinc-900 border border-white/10">
-                          <span className="block text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 font-manrope">
-                            Where should we send your OTP?
-                          </span>
-
-                          <div className="grid grid-cols-1 gap-2">
-                            {/* Gmail / Email */}
-                            <button
-                              type="button"
-                              onClick={() => setSelectedOtpChannel('email')}
-                              className={`p-3 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                                selectedOtpChannel === 'email'
-                                  ? 'bg-[#ef233c]/15 border-[#ef233c] shadow-md'
-                                  : 'bg-black/50 border-white/10 hover:border-white/20'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center">
-                                  <Mail className="w-4 h-4" />
-                                </div>
-                                <div>
-                                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                                    <span>Gmail / Email</span>
-                                    {selectedOtpChannel === 'email' && <Check className="w-3.5 h-3.5 text-[#ef233c]" />}
-                                  </div>
-                                  <div className="text-[11px] text-zinc-400 font-mono">
-                                    {discoveredChannels.masked_email || discoveredChannels.email || 'Your Email'}
-                                  </div>
-                                </div>
-                              </div>
-                            </button>
-
-                            {/* Mobile Phone */}
-                            <button
-                              type="button"
-                              onClick={() => setSelectedOtpChannel('phone')}
-                              className={`p-3 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                                selectedOtpChannel === 'phone'
-                                  ? 'bg-[#ef233c]/15 border-[#ef233c] shadow-md'
-                                  : 'bg-black/50 border-white/10 hover:border-white/20'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                                  <Phone className="w-4 h-4" />
-                                </div>
-                                <div>
-                                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                                    <span>Mobile Phone (SMS)</span>
-                                    {selectedOtpChannel === 'phone' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                                  </div>
-                                  <div className="text-[11px] text-zinc-400 font-mono">
-                                    {discoveredChannels.masked_phone || discoveredChannels.phone || 'Your Mobile Number'}
-                                  </div>
-                                </div>
-                              </div>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setDiscoveredChannels(null)}
-                            className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-zinc-300 font-semibold cursor-pointer"
-                          >
-                            Change Account
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSendOtpWithChannel}
-                            disabled={isSubmitting}
-                            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#ef233c] to-[#d90429] text-white text-xs font-bold shadow-lg cursor-pointer disabled:opacity-50"
-                          >
-                            {isSubmitting ? 'Dispatching...' : 'Dispatch OTP Code'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Step 3: Enter 6-digit OTP */
-                      <form onSubmit={handleVerifyOtp} noValidate className="space-y-3">
-                        {devOtpCode && (
-                          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-1.5 animate-in fade-in duration-200">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 font-bold text-amber-400">
-                                <Sparkles className="w-4 h-4 text-amber-400" />
-                                <span>OTP Code: <span className="font-mono text-sm tracking-widest text-white bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/40">{devOtpCode}</span></span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setOtpCode(devOtpCode)}
-                                className="px-2.5 py-1 rounded-lg bg-amber-500 text-black font-bold text-[11px] hover:bg-amber-400 transition-colors cursor-pointer"
-                              >
-                                Auto-Fill
-                              </button>
-                            </div>
-                            <div className="text-[10px] text-amber-300/80">
-                              ⚡ Local Mode: To deliver real OTPs to your Gmail inbox, add <span className="font-mono bg-black/40 px-1 py-0.5 rounded">SMTP_USER</span> and App Password in <span className="font-mono bg-black/40 px-1 py-0.5 rounded">backend/.env</span>.
-                            </div>
-                          </div>
-                        )}
-
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-xs font-medium text-zinc-300">
-                              Enter 6-Digit OTP sent to{' '}
-                              <strong className="text-white">
-                                {selectedOtpChannel === 'email' ? 'Gmail / Email' : 'Mobile Phone'}
-                              </strong>
-                            </label>
-                            {resendCooldown > 0 ? (
-                              <span className="text-[10px] text-zinc-500">Resend in {resendCooldown}s</span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={handleSendOtpWithChannel}
-                                className="text-[10px] text-[#ef233c] hover:underline cursor-pointer"
-                              >
-                                Resend
-                              </button>
-                            )}
-                          </div>
-                          <div className="relative">
-                            <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                            <input
-                              type="text"
-                              maxLength={6}
-                              autoComplete="one-time-code"
-                              value={otpCode}
-                              onChange={(e) => setOtpCode(e.target.value)}
-                              placeholder="123456"
-                              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white placeholder:text-zinc-600 text-lg tracking-widest font-mono text-center focus:border-[#ef233c] focus:outline-none focus:ring-1 focus:ring-[#ef233c]/50 transition-colors"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setOtpSent(false)}
-                            className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-zinc-300 font-semibold cursor-pointer"
-                          >
-                            Resend / Change
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#ef233c] to-[#d90429] text-white text-xs font-bold shadow-lg cursor-pointer"
-                          >
-                            {isSubmitting ? 'Verifying...' : 'Verify & Login'}
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
                 )}
 
                 {/* 3. PASSKEY LOGIN */}

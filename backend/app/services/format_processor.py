@@ -1,5 +1,7 @@
-from typing import Dict, Any, List, Optional
+import re
 import math
+from typing import Dict, Any, List, Optional
+from app.core.exceptions import MediaNotFoundException
 
 def format_duration(seconds: Optional[float]) -> str:
     """Formats duration seconds to HH:MM:SS or MM:SS."""
@@ -27,23 +29,35 @@ def estimate_format_size(fmt: Dict[str, Any], duration_sec: Optional[float]) -> 
 
 def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
     """Processes raw yt-dlp metadata into cleanly grouped formats, embed URL, and preview streams."""
+    # Unpack entries if raw_info is a search result or playlist
+    if raw_info.get("entries") and isinstance(raw_info["entries"], list):
+        valid_entries = [e for e in raw_info["entries"] if e and isinstance(e, dict)]
+        if valid_entries:
+            raw_info = valid_entries[0]
+        else:
+            raise MediaNotFoundException("No media formats or video streams found for this link.")
+
     duration = raw_info.get("duration") or 0
     raw_formats = raw_info.get("formats") or []
     video_id = str(raw_info.get("id") or "media")
     extractor_key = str(raw_info.get("extractor_key") or raw_info.get("extractor") or "generic").lower()
     
     has_audio = any(f.get("acodec") != "none" or f.get("audio_channels") for f in raw_formats)
+    if not has_audio and (duration > 0 or raw_info.get("url") or any(k in extractor_key for k in ("youtube", "tiktok", "instagram", "facebook", "twitter", "vimeo", "soundcloud"))):
+        has_audio = True
     
     video_options: List[Dict[str, Any]] = []
     seen_resolutions = set()
     best_preview_url: Optional[str] = None
     embed_url: Optional[str] = None
 
-    # Determine official embed URL based on platform for 100% playable in-app preview
+    # Determine official embed URL based on platform only if video_id is a valid alphanumeric video ID
     webpage_url = str(raw_info.get("webpage_url") or "").lower()
-    if "youtube" in extractor_key or "youtu" in extractor_key or "youtube.com" in webpage_url or "youtu.be" in webpage_url:
-        embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}?rel=0&modestbranding=1&playsinline=1"
-    elif "vimeo" in extractor_key or "vimeo.com" in webpage_url:
+    is_valid_yt_id = bool(re.match(r'^[a-zA-Z0-9_-]{11}$', video_id))
+    
+    if ("youtube" in extractor_key or "youtu" in extractor_key or "youtube.com" in webpage_url or "youtu.be" in webpage_url) and is_valid_yt_id:
+        embed_url = f"https://www.youtube.com/embed/{video_id}?rel=0&modestbranding=1&playsinline=1"
+    elif ("vimeo" in extractor_key or "vimeo.com" in webpage_url) and video_id.isdigit():
         embed_url = f"https://player.vimeo.com/video/{video_id}"
     elif "dailymotion" in extractor_key or "dailymotion.com" in webpage_url:
         embed_url = f"https://www.dailymotion.com/embed/video/{video_id}"
@@ -82,6 +96,12 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
     recommended_set = False
     for f in sorted_formats:
         height = f.get("height")
+        if not height:
+            res_str = str(f.get("resolution") or f.get("format_note") or "")
+            match_res = re.search(r'(\d{3,4})p?', res_str)
+            if match_res:
+                height = int(match_res.group(1))
+
         if not height or height < 144:
             continue
 
@@ -116,6 +136,24 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
             "is_recommended": is_rec,
             "requires_merge": f.get("acodec") == "none",
         })
+
+    # If no specific heights found, generate fallback standard video options
+    if not video_options:
+        best_h = raw_info.get("height") or 1080
+        video_options.append({
+            "format_id": str(raw_info.get("format_id") or "bestvideo+bestaudio/best"),
+            "resolution": f"{best_h}p" if best_h else "Best HD Quality",
+            "height": best_h or 1080,
+            "width": raw_info.get("width"),
+            "fps": raw_info.get("fps") or 30,
+            "ext": "mp4",
+            "codec": "H.264",
+            "hdr": None,
+            "size_bytes": estimate_format_size(raw_info, duration),
+            "is_recommended": True,
+            "requires_merge": False,
+        })
+        recommended_set = True
 
     if not recommended_set and video_options:
         video_options[0]["is_recommended"] = True

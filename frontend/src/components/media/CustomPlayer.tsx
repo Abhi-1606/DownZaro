@@ -81,7 +81,8 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
 
   const handleStartPlayback = () => {
     setHasStarted(true);
-    if (streamUrl && !embedUrl && videoRef.current) {
+    setHasStreamError(false);
+    if (streamUrl && videoRef.current) {
       videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
     }
   };
@@ -153,7 +154,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
-      if (!hasStarted || embedUrl) return; // let iframe handle own keys
+      if (!hasStarted) return;
 
       if (e.key === ' ' || e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -175,7 +176,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasStarted, isPlaying, isMuted, duration, currentTime, embedUrl]);
+  }, [hasStarted, isPlaying, isMuted, duration, currentTime]);
 
   const formatTime = (sec: number) => {
     if (!sec || isNaN(sec)) return '0:00';
@@ -200,36 +201,15 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
         isShort ? 'aspect-[9/16] max-h-[560px] mx-auto' : 'aspect-video'
       }`}
     >
-      {/* 1. ACTIVE EMBEDDED IFRAME PLAYER (e.g. YouTube, Vimeo, Twitch, Dailymotion) */}
-      {hasStarted && embedUrl ? (
-        <div className="relative w-full h-full">
-          <iframe
-            src={getEmbedSource()}
-            title={title}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-          />
-          {/* Top Floating Control Bar */}
-          <div className="absolute top-2 right-2 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              onClick={() => setHasStarted(false)}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-black/80 hover:bg-[#ef233c] backdrop-blur-md border border-white/20 hover:border-[#ef233c] flex items-center gap-1 shadow-lg transition-all cursor-pointer"
-              title="Reset to Preview Poster"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Preview</span>
-            </button>
-          </div>
-        </div>
-      ) : hasStarted && streamUrl && !hasStreamError ? (
-        /* 2. ACTIVE HTML5 VIDEO STREAM PLAYER */
+      {/* 1. ACTIVE HTML5 VIDEO STREAM PLAYER (Primary) */}
+      {hasStarted && streamUrl && !hasStreamError ? (
         <div className="relative w-full h-full flex items-center justify-center">
           <video
             ref={videoRef}
             src={streamUrl}
             poster={thumbnailUrl || undefined}
             playsInline
+            autoPlay
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onWaiting={() => setIsBuffering(true)}
@@ -239,12 +219,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
             }}
             onPause={() => setIsPlaying(false)}
             onError={() => {
-              if (embedUrl) {
-                // Auto fallback to embed if stream proxy fails
-                setHasStarted(true);
-              } else {
-                setHasStreamError(true);
-              }
+              setHasStreamError(true);
             }}
             onClick={togglePlay}
             className="w-full h-full object-contain cursor-pointer"
@@ -267,6 +242,21 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
               <Play className="w-8 h-8 fill-current ml-1" />
             </button>
           )}
+
+          {/* Top Floating Reset Control Bar */}
+          <div className="absolute top-2 right-2 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              onClick={() => {
+                setHasStarted(false);
+                setIsPlaying(false);
+              }}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-black/80 hover:bg-[#ef233c] backdrop-blur-md border border-white/20 hover:border-[#ef233c] flex items-center gap-1 shadow-lg transition-all cursor-pointer"
+              title="Reset to Preview Poster"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Preview</span>
+            </button>
+          </div>
 
           {/* Bottom Custom Controls Bar */}
           <div
@@ -359,6 +349,31 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      ) : hasStarted && embedUrl ? (
+        /* 2. ACTIVE EMBEDDED IFRAME PLAYER (Fallback when stream is unavailable) */
+        <div className="relative w-full h-full">
+          <iframe
+            src={getEmbedSource()}
+            title={title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+          {/* Top Floating Control Bar */}
+          <div className="absolute top-2 right-2 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              onClick={() => {
+                setHasStarted(false);
+                setHasStreamError(false);
+              }}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-black/80 hover:bg-[#ef233c] backdrop-blur-md border border-white/20 hover:border-[#ef233c] flex items-center gap-1 shadow-lg transition-all cursor-pointer"
+              title="Reset to Preview Poster"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Preview</span>
+            </button>
           </div>
         </div>
       ) : (

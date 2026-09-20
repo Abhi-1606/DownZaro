@@ -1,7 +1,8 @@
+import os
+import logging
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
-import logging
 from app.services import auth_service, notification_service
 
 logger = logging.getLogger("downzaro.api.auth")
