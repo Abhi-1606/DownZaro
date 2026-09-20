@@ -34,6 +34,15 @@ export interface ThumbnailFormat {
   is_recommended: boolean;
 }
 
+export interface PreviewQuality {
+  quality: string;
+  height: number;
+  stream_url: string;
+  direct_url?: string;
+  fps?: number;
+  has_audio?: boolean;
+}
+
 export interface MediaDetails {
   video_id: string;
   extractor_key: string;
@@ -48,6 +57,7 @@ export interface MediaDetails {
   description: string;
   thumbnail?: string;
   preview_stream_url?: string;
+  preview_streams?: PreviewQuality[];
   embed_url?: string;
   has_audio: boolean;
   video_formats: VideoFormat[];
@@ -65,6 +75,7 @@ export interface MediaInfoResponse {
   start_seconds: number;
   stream_token?: string;
   preview_proxy_url?: string;
+  preview_qualities?: PreviewQuality[];
   media: MediaDetails;
 }
 

@@ -34,11 +34,24 @@ async def extract_media_info(req: InfoRequest, request: Request):
     # 4. Format processing and quality grouping
     processed = process_media_formats(raw_metadata)
 
-    # 5. Create a secure stream token for seekable video preview
+    # 5. Create secure stream tokens for seekable video preview and quality switching
     stream_token = None
     if processed.get("preview_stream_url"):
         stream_token = str(uuid.uuid4())
         register_stream_url(stream_token, processed["preview_stream_url"])
+
+    preview_qualities = []
+    for s in processed.get("preview_streams", []):
+        s_token = str(uuid.uuid4())
+        register_stream_url(s_token, s["url"])
+        preview_qualities.append({
+            "quality": s["quality"],
+            "height": s["height"],
+            "stream_url": f"/api/stream/{s_token}",
+            "direct_url": s["url"],
+            "fps": s.get("fps", 30),
+            "has_audio": s.get("has_audio", True),
+        })
 
     return {
         "success": True,
@@ -49,5 +62,6 @@ async def extract_media_info(req: InfoRequest, request: Request):
         "start_seconds": parsed_info["start_seconds"],
         "stream_token": stream_token,
         "preview_proxy_url": f"/api/stream/{stream_token}" if stream_token else None,
+        "preview_qualities": preview_qualities,
         "media": processed,
     }

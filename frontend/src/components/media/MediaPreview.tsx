@@ -40,6 +40,8 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
             startSeconds={info.start_seconds}
             durationFormatted={media.duration_formatted}
             isShort={media.duration > 0 && media.duration <= 65}
+            qualities={info.preview_qualities || media.preview_streams}
+            videoFormats={media.video_formats}
           />
 
           {/* Media Title & Metadata Info */}

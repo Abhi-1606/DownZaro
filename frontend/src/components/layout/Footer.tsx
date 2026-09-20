@@ -23,6 +23,8 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onOpenLegal, healthInfo }) => {
+  const isHealthy = healthInfo?.status === 'healthy';
+
   // Navigation / Format sections
   const formatLinks = [
     { label: '4K & 1080p MP4 Video', href: '#url-input' },
@@ -91,15 +93,30 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLegal, healthInfo }) => {
                 Pioneering high-speed, privacy-first media downloads with modern stream muxing and zero tracking.
               </p>
               
-              {/* Engine Status Pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-zinc-800 text-xs text-zinc-300 w-fit">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    healthInfo?.status === 'healthy' ? 'bg-[#ef233c] animate-pulse' : 'bg-[#ef233c] animate-pulse'
-                  }`}
-                />
-                <span className="font-mono text-[11px] text-zinc-300">
-                  yt-dlp {healthInfo?.ytdlp_version || '2026.08.19'} • FFmpeg 7.1
+              {/* Live System Operational Status Pill */}
+              <div
+                className={`inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-zinc-900/90 border ${
+                  isHealthy ? 'border-emerald-500/30 hover:border-emerald-500/50' : 'border-[#ef233c]/30 hover:border-[#ef233c]/50'
+                } text-xs text-zinc-200 w-fit shadow-lg shadow-black/40 backdrop-blur-md transition-all`}
+              >
+                <span className="relative flex h-2 w-2">
+                  <span
+                    className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                      isHealthy ? 'bg-emerald-400' : 'bg-[#ef233c]'
+                    } opacity-75`}
+                  ></span>
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${
+                      isHealthy ? 'bg-emerald-500' : 'bg-[#ef233c]'
+                    }`}
+                  ></span>
+                </span>
+                <span className="font-medium text-[11.5px] text-zinc-300 flex items-center gap-1.5 font-manrope">
+                  <span className="text-white font-semibold">
+                    {isHealthy ? 'All Systems Operational' : 'Cloud Processing Active'}
+                  </span>
+                  <span className="text-zinc-500">•</span>
+                  <span className="text-zinc-400">High-Speed Engine</span>
                 </span>
               </div>
             </div>

@@ -11,6 +11,10 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 # --- Pydantic Request Models ---
 
+class CheckEmailRequest(BaseModel):
+    email: EmailStr
+
+
 class GoogleAuthRequest(BaseModel):
     email: EmailStr
     name: Optional[str] = None
@@ -91,6 +95,19 @@ async def get_current_user(authorization: Optional[str] = Header(None)):
 
 
 # --- Endpoints ---
+
+@router.post("/check-email")
+async def check_email(payload: CheckEmailRequest):
+    """Checks whether an account already exists with this email address."""
+    user = auth_service.find_user_by_identifier(payload.email)
+    exists = bool(user)
+    return {
+        "success": True,
+        "exists": exists,
+        "email": payload.email,
+        "message": "An account already exists with this email." if exists else "Email is available for registration."
+    }
+
 
 @router.post("/register")
 async def register(payload: RegisterRequest):

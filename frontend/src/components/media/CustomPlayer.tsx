@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Play,
   Pause,
@@ -10,7 +10,10 @@ import {
   RotateCcw,
   Film,
   Sparkles,
+  Sliders,
+  Check,
 } from 'lucide-react';
+import { PreviewQuality, VideoFormat } from '../../utils/types';
 
 interface CustomPlayerProps {
   streamUrl?: string | null;
@@ -20,6 +23,8 @@ interface CustomPlayerProps {
   startSeconds?: number;
   durationFormatted?: string;
   isShort?: boolean;
+  qualities?: PreviewQuality[];
+  videoFormats?: VideoFormat[];
 }
 
 export const CustomPlayer: React.FC<CustomPlayerProps> = ({
@@ -30,9 +35,13 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
   startSeconds = 0,
   durationFormatted,
   isShort = false,
+  qualities,
+  videoFormats,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const qualityMenuRef = useRef<HTMLDivElement>(null);
+  const savedTimeRef = useRef<{ time: number; wasPlaying: boolean } | null>(null);
 
   // Playback mode: whether active playback has been initiated by the user
   const [hasStarted, setHasStarted] = useState(false);
@@ -48,12 +57,119 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
   const [hasStreamError, setHasStreamError] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
 
+  // Quality Switching State
+  const [activeStreamUrl, setActiveStreamUrl] = useState<string | undefined>(streamUrl || undefined);
+  const [selectedQuality, setSelectedQuality] = useState<string>('Auto');
+  const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
+  const [qualityToast, setQualityToast] = useState<string | null>(null);
+
+  // Generate quality options list
+  const qualityOptions = useMemo(() => {
+    const options: Array<{
+      id: string;
+      label: string;
+      height?: number;
+      streamUrl?: string;
+      hasAudio?: boolean;
+    }> = [];
+
+    // If explicit preview qualities provided with URLs
+    if (qualities && qualities.length > 0) {
+      options.push({
+        id: 'Auto',
+        label: 'Auto (Best)',
+        streamUrl: streamUrl || qualities[0].stream_url,
+      });
+
+      qualities.forEach((q) => {
+        options.push({
+          id: q.quality,
+          label: `${q.quality}${q.height >= 720 ? (q.height >= 1440 ? ' 4K' : ' HD') : ''}`,
+          height: q.height,
+          streamUrl: q.stream_url,
+          hasAudio: q.has_audio,
+        });
+      });
+    } else if (videoFormats && videoFormats.length > 0) {
+      // If video formats provided from yt-dlp metadata
+      options.push({
+        id: 'Auto',
+        label: 'Auto (Best)',
+        streamUrl: streamUrl || undefined,
+      });
+
+      const seen = new Set<string>();
+      videoFormats.forEach((f) => {
+        if (!seen.has(f.resolution) && f.height >= 144) {
+          seen.add(f.resolution);
+          options.push({
+            id: f.resolution,
+            label: `${f.resolution}${f.height >= 720 ? (f.height >= 1440 ? ' 4K' : ' HD') : ''}`,
+            height: f.height,
+            streamUrl: streamUrl || undefined,
+          });
+        }
+      });
+    } else {
+      // Default fallback qualities
+      options.push(
+        { id: 'Auto', label: 'Auto (Best)', streamUrl: streamUrl || undefined },
+        { id: '1080p', label: '1080p HD', height: 1080, streamUrl: streamUrl || undefined },
+        { id: '720p', label: '720p HD', height: 720, streamUrl: streamUrl || undefined },
+        { id: '480p', label: '480p', height: 480, streamUrl: streamUrl || undefined },
+        { id: '360p', label: '360p', height: 360, streamUrl: streamUrl || undefined }
+      );
+    }
+
+    return options;
+  }, [qualities, videoFormats, streamUrl]);
+
+  // Handle Quality Selection
+  const handleSelectQuality = (opt: (typeof qualityOptions)[0]) => {
+    setSelectedQuality(opt.id);
+    setIsQualityMenuOpen(false);
+
+    if (videoRef.current) {
+      const time = videoRef.current.currentTime;
+      const wasPlaying = !videoRef.current.paused;
+      savedTimeRef.current = { time, wasPlaying };
+
+      if (opt.streamUrl && opt.streamUrl !== activeStreamUrl) {
+        setActiveStreamUrl(opt.streamUrl);
+      }
+    }
+
+    setQualityToast(opt.label);
+    setTimeout(() => {
+      setQualityToast(null);
+    }, 2200);
+  };
+
+  // Close quality menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (qualityMenuRef.current && !qualityMenuRef.current.contains(e.target as Node)) {
+        setIsQualityMenuOpen(false);
+      }
+    };
+    if (isQualityMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isQualityMenuOpen]);
+
   // Reset when media changes
   useEffect(() => {
     setHasStarted(false);
     setIsPlaying(false);
     setHasStreamError(false);
     setCurrentTime(0);
+    setActiveStreamUrl(streamUrl || undefined);
+    setSelectedQuality('Auto');
+    setIsQualityMenuOpen(false);
+    savedTimeRef.current = null;
   }, [embedUrl, streamUrl, title]);
 
   // Set initial timestamp if present
@@ -77,12 +193,22 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
     if (!videoRef.current) return;
     setDuration(videoRef.current.duration);
     setHasStreamError(false);
+
+    // Restore saved time and play state after quality switch
+    if (savedTimeRef.current) {
+      videoRef.current.currentTime = savedTimeRef.current.time;
+      if (savedTimeRef.current.wasPlaying) {
+        videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+      }
+      savedTimeRef.current = null;
+    }
   };
 
   const handleStartPlayback = () => {
     setHasStarted(true);
     setHasStreamError(false);
-    if (streamUrl && videoRef.current) {
+    const targetUrl = activeStreamUrl || streamUrl;
+    if (targetUrl && videoRef.current) {
       videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
     }
   };
@@ -192,6 +318,8 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
     return `${embedUrl}${separator}autoplay=1&enablejsapi=1`;
   };
 
+  const effectiveStreamUrl = activeStreamUrl || streamUrl;
+
   return (
     <div
       ref={containerRef}
@@ -201,12 +329,20 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
         isShort ? 'aspect-[9/16] max-h-[560px] mx-auto' : 'aspect-video'
       }`}
     >
+      {/* Quality Toast Banner */}
+      {qualityToast && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-full bg-black/85 backdrop-blur-xl border border-[#ef233c]/60 text-white text-xs font-bold shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 flex items-center gap-1.5 pointer-events-none">
+          <Sliders className="w-3.5 h-3.5 text-[#ef233c]" />
+          <span>Quality: {qualityToast}</span>
+        </div>
+      )}
+
       {/* 1. ACTIVE HTML5 VIDEO STREAM PLAYER (Primary) */}
-      {hasStarted && streamUrl && !hasStreamError ? (
+      {hasStarted && effectiveStreamUrl && !hasStreamError ? (
         <div className="relative w-full h-full flex items-center justify-center">
           <video
             ref={videoRef}
-            src={streamUrl}
+            src={effectiveStreamUrl}
             poster={thumbnailUrl || undefined}
             playsInline
             autoPlay
@@ -261,7 +397,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
           {/* Bottom Custom Controls Bar */}
           <div
             className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-4 z-30 transition-opacity duration-300 ${
-              isHovering || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              isHovering || !isPlaying || isQualityMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
             {/* Seek Bar */}
@@ -321,7 +457,69 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
+                {/* Quality Option Menu */}
+                <div className="relative" ref={qualityMenuRef}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsQualityMenuOpen((prev) => !prev);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                      isQualityMenuOpen
+                        ? 'bg-[#ef233c] text-white shadow-[0_0_10px_rgba(239,35,60,0.6)]'
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                    title="Change Video Quality"
+                  >
+                    <Sliders className="w-3 h-3 text-[#ef233c]" />
+                    <span>{selectedQuality}</span>
+                  </button>
+
+                  {/* Quality Dropdown Popup */}
+                  {isQualityMenuOpen && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute bottom-full right-0 mb-2.5 w-40 bg-zinc-950/95 backdrop-blur-2xl rounded-xl border border-white/15 shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150"
+                    >
+                      <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 border-b border-white/10 flex items-center justify-between">
+                        <span>Quality</span>
+                        <span className="text-[#ef233c] font-black">HD</span>
+                      </div>
+                      <div className="py-1 max-h-48 overflow-y-auto space-y-0.5 custom-scrollbar">
+                        {qualityOptions.map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => handleSelectQuality(opt)}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                              selectedQuality === opt.id
+                                ? 'bg-[#ef233c]/20 text-[#ef233c] font-bold'
+                                : 'text-zinc-300 hover:text-white hover:bg-white/10'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {selectedQuality === opt.id ? (
+                                <Check className="w-3.5 h-3.5 text-[#ef233c] shrink-0" />
+                              ) : (
+                                <span className="w-3.5 shrink-0" />
+                              )}
+                              <span>{opt.label}</span>
+                            </div>
+                            {opt.height && opt.height >= 720 && (
+                              <span className="text-[9px] font-extrabold px-1 py-0.2 rounded bg-[#ef233c]/25 text-[#ef233c]">
+                                {opt.height >= 1440 ? '4K' : 'HD'}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Playback Speed */}
                 <button
                   onClick={cycleSpeed}
                   className="px-2 py-0.5 rounded text-[11px] font-bold bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"

@@ -77,20 +77,50 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
         reverse=True
     )
 
-    # Find playable direct stream URL for HTML5 player
+    # Find playable direct stream URL for HTML5 player and collect quality streams
+    preview_streams: List[Dict[str, Any]] = []
+    seen_preview_heights = set()
+
     for f in sorted_formats:
         vcodec = f.get("vcodec") or ""
         acodec = f.get("acodec") or ""
         url = f.get("url") or ""
+        height = f.get("height")
+        if not height:
+            res_str = str(f.get("resolution") or f.get("format_note") or "")
+            match_res = re.search(r'(\d{3,4})p?', res_str)
+            if match_res:
+                height = int(match_res.group(1))
+
         if vcodec != "none" and url:
             if acodec != "none" and ("avc" in vcodec.lower() or "h264" in vcodec.lower() or f.get("ext") == "mp4"):
-                best_preview_url = url
-                break
+                if not best_preview_url:
+                    best_preview_url = url
             elif not best_preview_url:
                 best_preview_url = url
 
+            if height and height >= 144 and height not in seen_preview_heights:
+                seen_preview_heights.add(height)
+                preview_streams.append({
+                    "quality": f"{height}p",
+                    "height": height,
+                    "url": url,
+                    "fps": f.get("fps") or 30,
+                    "has_audio": acodec != "none",
+                })
+
     if not best_preview_url and raw_info.get("url"):
         best_preview_url = raw_info.get("url")
+
+    # If preview_streams is empty but best_preview_url exists, add it as default
+    if not preview_streams and best_preview_url:
+        preview_streams.append({
+            "quality": "Auto",
+            "height": raw_info.get("height") or 720,
+            "url": best_preview_url,
+            "fps": raw_info.get("fps") or 30,
+            "has_audio": has_audio,
+        })
 
     # Process Video Download Options
     recommended_set = False
@@ -245,6 +275,7 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
         "description": raw_info.get("description") or "",
         "thumbnail": raw_info.get("thumbnail") or (thumbnail_options[0]["url"] if thumbnail_options else None),
         "preview_stream_url": best_preview_url,
+        "preview_streams": preview_streams,
         "embed_url": embed_url,
         "has_audio": has_audio,
         "video_formats": video_options,
