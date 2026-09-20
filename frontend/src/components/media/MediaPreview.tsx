@@ -1,22 +1,29 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { CustomPlayer } from './CustomPlayer';
 import { FormatSelector } from './FormatSelector';
 import { MediaInfoResponse } from '../../utils/types';
 import { formatNumber, formatRelativeDate } from '../../utils/formatters';
-import { Eye, Calendar, User, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Eye, Calendar, User, ExternalLink } from 'lucide-react';
 
 interface MediaPreviewProps {
   info: MediaInfoResponse;
   onStartDownload: (params: any) => void;
   isDownloading?: boolean;
+  isAuthenticated?: boolean;
+  guestDownloadsCount?: number;
+  guestLimit?: number;
+  onOpenAuth?: (mode?: 'signin' | 'signup') => void;
 }
 
 export const MediaPreview: React.FC<MediaPreviewProps> = ({
   info,
   onStartDownload,
   isDownloading,
+  isAuthenticated = false,
+  guestDownloadsCount = 0,
+  guestLimit = 3,
+  onOpenAuth,
 }) => {
-  const [descExpanded, setDescExpanded] = useState(false);
   const media = info.media;
 
   return (
@@ -45,7 +52,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
             </h1>
 
             {/* Author / Stats Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-400 pb-3 border-b border-white/10">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-400">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-[#ef233c]/15 text-[#ef233c] flex items-center justify-center font-bold">
                   <User className="w-3.5 h-3.5" />
@@ -83,34 +90,6 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
                 </span>
               </div>
             </div>
-
-            {/* Description Collapsible */}
-            {media.description && (
-              <div className="mt-3">
-                <p
-                  dir="auto"
-                  className={`text-xs text-zinc-400 whitespace-pre-line leading-relaxed ${
-                    !descExpanded ? 'line-clamp-2' : ''
-                  }`}
-                >
-                  {media.description}
-                </p>
-                <button
-                  onClick={() => setDescExpanded(!descExpanded)}
-                  className="mt-1.5 text-xs font-bold text-[#ef233c] flex items-center gap-1 hover:underline"
-                >
-                  {descExpanded ? (
-                    <>
-                      Show less <ChevronUp className="w-3 h-3" />
-                    </>
-                  ) : (
-                    <>
-                      Show more <ChevronDown className="w-3 h-3" />
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -120,6 +99,10 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
             media={media}
             onStartDownload={onStartDownload}
             isDownloading={isDownloading}
+            isAuthenticated={isAuthenticated}
+            guestDownloadsCount={guestDownloadsCount}
+            guestLimit={guestLimit}
+            onOpenAuth={onOpenAuth}
           />
         </div>
       </div>

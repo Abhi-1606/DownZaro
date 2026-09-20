@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link2, Sliders, ArrowDownCircle } from 'lucide-react';
+import { GlowingEdgeCard } from '../ui/GlowingEdgeCard';
 
 export const HowItWorks: React.FC = () => {
   const steps = [
@@ -44,26 +45,30 @@ export const HowItWorks: React.FC = () => {
         {steps.map((step, idx) => {
           const Icon = step.icon;
           return (
-            <div
+            <GlowingEdgeCard
               key={idx}
-              className="relative p-8 rounded-2xl bg-gradient-to-b from-zinc-900/60 to-black/80 border border-white/10 backdrop-blur-xl shadow-2xl flex flex-col items-center text-center group hover:border-[#ef233c]/40 transition-all duration-300"
+              className="h-full min-h-[320px]"
             >
-              {/* Step Number Badge */}
-              <div className="absolute -top-3.5 px-3.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase text-white bg-[#ef233c] shadow-[0_0_15px_rgba(239,35,60,0.5)] font-manrope">
-                STEP {step.num}
-              </div>
+              <div className="p-8 flex flex-col items-center text-center h-full justify-between">
+                {/* Step Number Badge */}
+                <div className="px-3.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase text-white bg-[#ef233c] shadow-[0_0_15px_rgba(239,35,60,0.5)] font-manrope">
+                  STEP {step.num}
+                </div>
 
-              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 text-[#ef233c] flex items-center justify-center mb-6 mt-3 group-hover:scale-110 group-hover:border-[#ef233c]/30 group-hover:bg-[#ef233c]/10 transition-all duration-300 shadow-inner">
-                <Icon className="w-7 h-7" />
-              </div>
+                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 text-[#ef233c] flex items-center justify-center my-6 group-hover:scale-110 group-hover:border-[#ef233c]/30 group-hover:bg-[#ef233c]/10 transition-all duration-300 shadow-inner">
+                  <Icon className="w-7 h-7" />
+                </div>
 
-              <h3 className="text-xl font-bold text-white font-manrope mb-3 tracking-tight">
-                {step.title}
-              </h3>
-              <p className="text-sm text-zinc-400 leading-relaxed max-w-xs font-inter">
-                {step.desc}
-              </p>
-            </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white font-manrope mb-3 tracking-tight">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-zinc-400 leading-relaxed font-inter font-light">
+                    {step.desc}
+                  </p>
+                </div>
+              </div>
+            </GlowingEdgeCard>
           );
         })}
       </div>
@@ -71,3 +76,4 @@ export const HowItWorks: React.FC = () => {
   );
 };
 
+export default HowItWorks;

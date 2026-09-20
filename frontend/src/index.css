@@ -13,7 +13,13 @@
     --surface-muted: #121218;
     --border: rgba(255, 255, 255, 0.1);
     --text: #FFFFFF;
-    --muted: #a1a1aa;
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+    --background: #000000;
+    --foreground: #ffffff;
+    --primary: #ef233c;
+    --secondary: #27272a;
+    --destructive: #ef233c;
     --brand-primary: #ef233c;
     --brand-secondary: #d90429;
     --brand-accent: #ff4d6d;

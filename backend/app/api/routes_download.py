@@ -22,10 +22,36 @@ class DownloadRequest(BaseModel):
     thumb_id: Optional[str] = None
     thumbnail_url: Optional[str] = None
 
+from collections import defaultdict
+from app.services import auth_service
+
+guest_download_counts = defaultdict(int)
+
 @router.post("/api/download")
 async def start_download(req: DownloadRequest, request: Request):
     ip = get_client_ip(request)
     rate_limiter.check(ip, settings.RATE_LIMIT_DOWNLOAD_PER_MINUTE)
+
+    # Check authentication token
+    auth_header = request.headers.get("Authorization")
+    user = None
+    if auth_header and "Bearer " in auth_header:
+        token = auth_header.replace("Bearer ", "").strip()
+        user = auth_service.get_user_from_token(token)
+
+    # If unauthenticated guest, enforce 3-download maximum
+    if not user:
+        current_count = guest_download_counts[ip]
+        if current_count >= 3:
+            raise DownZaroException(
+                status_code=403,
+                code="GUEST_LIMIT_REACHED",
+                message="You have used your 3 free guest downloads. Please sign in or create an account for unlimited downloads."
+            )
+        guest_download_counts[ip] += 1
+        remaining_guest_downloads = max(0, 3 - guest_download_counts[ip])
+    else:
+        remaining_guest_downloads = -1  # Unlimited for logged-in users
 
     # 1. Normalize and re-verify SSRF
     parsed_info = normalize_media_url(req.url)
@@ -54,6 +80,8 @@ async def start_download(req: DownloadRequest, request: Request):
         "job_id": job["job_id"],
         "status": job["status"],
         "stage_label": job["stage_label"],
+        "is_authenticated": bool(user),
+        "guest_downloads_remaining": remaining_guest_downloads
     }
 
 @router.post("/api/cancel/{job_id}")

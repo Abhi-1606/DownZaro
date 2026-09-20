@@ -18,6 +18,8 @@ from app.api.routes_stream import router as stream_router
 from app.api.routes_download import router as download_router
 from app.api.routes_progress import router as progress_router
 from app.api.routes_file import router as file_router
+from app.api.routes_auth import router as auth_router
+from app.db.database import init_db
 
 # Configure logging
 logging.basicConfig(
@@ -37,6 +39,12 @@ async def lifespan(app: FastAPI):
             logger.warning("⚠️  ffmpeg is not detected or executable. Media merging may be degraded.")
     except Exception as e:
         logger.warning(f"Startup diagnostic check warning: {e}")
+
+    # Initialize database tables in Docker DownZaro
+    try:
+        init_db()
+    except Exception as e:
+        logger.warning(f"Database initialization warning: {e}")
 
     # Start background cleaner task
     cleaner_task = None
@@ -103,6 +111,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 # Include All Routers
 app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(url_router)
 app.include_router(info_router)
 app.include_router(stream_router)

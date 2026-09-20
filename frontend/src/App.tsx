@@ -4,6 +4,7 @@ import { Footer } from './components/layout/Footer';
 import { HeroSection } from './components/sections/HeroSection';
 import { FeaturesSection } from './components/sections/FeaturesSection';
 import { HowItWorks } from './components/sections/HowItWorks';
+import { MediaVaultSection } from './components/sections/MediaVaultSection';
 import { FaqAccordion } from './components/sections/FaqAccordion';
 import { UrlInput } from './components/media/UrlInput';
 import { MediaPreview } from './components/media/MediaPreview';
@@ -12,10 +13,12 @@ import { HistoryPanel } from './components/history/HistoryPanel';
 import { UndoToast } from './components/history/UndoToast';
 import { LegalModal } from './components/legal/LegalModal';
 import { InstallAppModal } from './components/pwa/InstallAppModal';
-
+import { AuthModal } from './components/auth/AuthModal';
+import { WelcomeBanner } from './components/ui/WelcomeBanner';
 
 import { useTheme } from './hooks/useTheme';
 import { useHistoryStorage } from './hooks/useHistoryStorage';
+import { useAuth } from './hooks/useAuth';
 import {
   MediaInfoResponse,
   DownloadJob,
@@ -31,6 +34,7 @@ import {
 
 export const App: React.FC = () => {
   const { themeMode, resolvedTheme, setThemeMode } = useTheme();
+  const auth = useAuth();
   const {
     history,
     addHistoryItem,
@@ -43,6 +47,7 @@ export const App: React.FC = () => {
   const [activeView, setActiveView] = useState<'home' | 'history'>('home');
   const [legalModalType, setLegalModalType] = useState<'terms' | 'privacy' | 'dmca' | null>(null);
   const [installModalOpen, setInstallModalOpen] = useState(false);
+  const [guestLimitNotice, setGuestLimitNotice] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   // Capture PWA beforeinstallprompt on Chrome/Edge/Android
@@ -162,10 +167,20 @@ export const App: React.FC = () => {
   }) => {
     if (!mediaInfo) return;
 
+    // Check guest download limit (3 max for unauthenticated users)
+    if (!auth.isAuthenticated && auth.guestCount >= auth.guestLimit) {
+      setGuestLimitNotice(true);
+      auth.openAuthModal('signup');
+      return;
+    }
+
     try {
       const res = await fetch('/api/download', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
+        },
         body: JSON.stringify({
           url: mediaInfo.canonical_url,
           title: mediaInfo.media.title,
@@ -188,8 +203,19 @@ export const App: React.FC = () => {
       }
 
       if (!res.ok) {
-        alert(data.message || 'Failed to initialize download.');
+        if (res.status === 403 || data.code === 'GUEST_LIMIT_REACHED') {
+          setGuestLimitNotice(true);
+          auth.openAuthModal('signup');
+          return;
+        }
+        alert(data.message || data.detail || 'Failed to initialize download.');
         return;
+      }
+
+      // Increment guest counter for unauthenticated downloads
+      if (!auth.isAuthenticated) {
+        auth.incrementGuestDownloads();
+        auth.refreshGuestCount();
       }
 
       const newJob: DownloadJob = {
@@ -286,6 +312,12 @@ export const App: React.FC = () => {
         </div>
       )}
 
+      {/* Floating Morphing Welcome Banner (Non-overlapping, triggered after login/signup) */}
+      <WelcomeBanner
+        data={auth.welcomeBannerData}
+        onDismiss={() => auth.setWelcomeBannerData(null)}
+      />
+
       {/* App Header */}
       <Header
         themeMode={themeMode}
@@ -296,6 +328,12 @@ export const App: React.FC = () => {
         onGetStartedClick={handleScrollToInput}
         onOpenInstallApp={() => setInstallModalOpen(true)}
         activeDownloadsCount={activeJobs.filter((j) => ['queued', 'preparing', 'downloading_video', 'downloading_audio', 'merging'].includes(j.status)).length}
+        user={auth.user}
+        onOpenAuth={(mode) => {
+          setGuestLimitNotice(false);
+          auth.openAuthModal(mode || 'signin');
+        }}
+        onLogout={auth.logout}
       />
 
       {/* Main Content Area */}
@@ -336,7 +374,7 @@ export const App: React.FC = () => {
             )}
 
             {/* Hero Section */}
-            <HeroSection />
+            <HeroSection user={auth.user} />
 
             {/* Smart URL Bar Input */}
             <div className="px-4">
@@ -377,13 +415,21 @@ export const App: React.FC = () => {
                 <MediaPreview
                   info={mediaInfo}
                   onStartDownload={handleStartDownload}
+                  isAuthenticated={auth.isAuthenticated}
+                  guestDownloadsCount={auth.guestCount}
+                  guestLimit={auth.guestLimit}
+                  onOpenAuth={(m) => {
+                    setGuestLimitNotice(false);
+                    auth.openAuthModal(m || 'signup');
+                  }}
                 />
               </div>
             )}
 
-            {/* Landing Sections: Features, How It Works, FAQ */}
+            {/* Landing Sections: Features, How It Works, Media Vault, FAQ */}
             <FeaturesSection />
             <HowItWorks />
+            <MediaVaultSection />
             <FaqAccordion />
           </>
         )}
@@ -404,6 +450,18 @@ export const App: React.FC = () => {
           setDeferredPrompt(null);
           setInstallModalOpen(false);
         }}
+      />
+
+      {/* User Authentication & Account Modal */}
+      <AuthModal
+        isOpen={auth.isModalOpen}
+        onClose={() => {
+          setGuestLimitNotice(false);
+          auth.closeAuthModal();
+        }}
+        initialMode={auth.modalMode}
+        auth={auth}
+        limitReachedNotice={guestLimitNotice}
       />
 
       {/* Footer */}

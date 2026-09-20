@@ -196,7 +196,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
       ref={containerRef}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
-      className={`relative w-full rounded-2xl overflow-hidden bg-black/95 shadow-2xl border border-light-border dark:border-dark-border group select-none flex items-center justify-center ${
+      className={`relative w-full rounded-2xl overflow-hidden bg-black/95 shadow-2xl border border-white/10 group select-none flex items-center justify-center ${
         isShort ? 'aspect-[9/16] max-h-[560px] mx-auto' : 'aspect-video'
       }`}
     >
@@ -214,7 +214,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
           <div className="absolute top-2 right-2 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => setHasStarted(false)}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/20 flex items-center gap-1 shadow-lg transition-all"
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-black/80 hover:bg-[#ef233c] backdrop-blur-md border border-white/20 hover:border-[#ef233c] flex items-center gap-1 shadow-lg transition-all cursor-pointer"
               title="Reset to Preview Poster"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -252,8 +252,8 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
 
           {/* Buffering Spinner */}
           {isBuffering && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20 pointer-events-none">
-              <div className="w-12 h-12 rounded-full border-4 border-brand-primary/30 border-t-brand-primary animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20 pointer-events-none">
+              <div className="w-12 h-12 rounded-full border-4 border-[#ef233c]/30 border-t-[#ef233c] animate-spin" />
             </div>
           )}
 
@@ -261,7 +261,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
           {!isPlaying && !isBuffering && (
             <button
               onClick={togglePlay}
-              className="absolute z-20 p-5 rounded-full bg-brand-gradient text-white shadow-2xl shadow-brand-primary/50 transform hover:scale-110 active:scale-95 transition-all duration-200"
+              className="absolute z-20 p-5 rounded-full bg-gradient-to-r from-[#ef233c] to-[#d90429] text-white shadow-2xl shadow-[#ef233c]/50 transform hover:scale-110 active:scale-95 transition-all duration-200 border border-white/30 cursor-pointer"
               aria-label="Play video"
             >
               <Play className="w-8 h-8 fill-current ml-1" />
@@ -270,7 +270,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
 
           {/* Bottom Custom Controls Bar */}
           <div
-            className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-4 z-30 transition-opacity duration-300 ${
+            className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-4 z-30 transition-opacity duration-300 ${
               isHovering || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
@@ -283,7 +283,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
                 />
               </div>
               <div
-                className="absolute left-0 top-0 bottom-0 bg-brand-gradient rounded-full"
+                className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-[#ef233c] to-[#ff4d6d] rounded-full shadow-[0_0_10px_rgba(239,35,60,0.5)]"
                 style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
               />
               <input
@@ -301,7 +301,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
               <div className="flex items-center gap-3">
                 <button
                   onClick={togglePlay}
-                  className="p-1.5 hover:text-brand-primary transition-colors"
+                  className="p-1.5 hover:text-[#ef233c] transition-colors cursor-pointer"
                   aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
@@ -310,7 +310,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
                 <div className="flex items-center gap-1.5 group/vol">
                   <button
                     onClick={toggleMute}
-                    className="p-1.5 hover:text-brand-primary transition-colors"
+                    className="p-1.5 hover:text-[#ef233c] transition-colors cursor-pointer"
                     aria-label={isMuted ? 'Unmute' : 'Mute'}
                   >
                     {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -322,11 +322,11 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
                     step={0.05}
                     value={isMuted ? 0 : volume}
                     onChange={handleVolumeChange}
-                    className="w-16 h-1 bg-white/30 accent-brand-primary rounded-full cursor-pointer opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200"
+                    className="w-16 h-1 bg-white/30 accent-[#ef233c] rounded-full cursor-pointer opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200"
                   />
                 </div>
 
-                <span className="font-mono text-[11px] text-slate-300">
+                <span className="font-mono text-[11px] text-zinc-300">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
               </div>
@@ -334,7 +334,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
               <div className="flex items-center gap-3">
                 <button
                   onClick={cycleSpeed}
-                  className="px-2 py-0.5 rounded text-[11px] font-bold bg-white/10 hover:bg-white/20 transition-colors"
+                  className="px-2 py-0.5 rounded text-[11px] font-bold bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
                   title="Playback Speed"
                 >
                   {playbackSpeed}x
@@ -343,7 +343,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
                 {document.pictureInPictureEnabled && (
                   <button
                     onClick={togglePiP}
-                    className="p-1.5 hover:text-brand-primary transition-colors"
+                    className="p-1.5 hover:text-[#ef233c] transition-colors cursor-pointer"
                     title="Picture in Picture"
                   >
                     <PictureInPicture className="w-4 h-4" />
@@ -352,7 +352,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
 
                 <button
                   onClick={toggleFullscreen}
-                  className="p-1.5 hover:text-brand-primary transition-colors"
+                  className="p-1.5 hover:text-[#ef233c] transition-colors cursor-pointer"
                   title="Fullscreen (F)"
                 >
                   {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -362,7 +362,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
           </div>
         </div>
       ) : (
-        /* 3. INTERACTIVE POSTER & PLAY PREVIEW TRIGGER OVERLAY */
+        /* 3. INTERACTIVE POSTER & PLAY PREVIEW TRIGGER OVERLAY (Red & White Theme) */
         <div
           onClick={handleStartPlayback}
           className="relative w-full h-full flex flex-col items-center justify-center cursor-pointer overflow-hidden group/poster"
@@ -375,50 +375,50 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
               className="absolute inset-0 w-full h-full object-cover transform group-hover/poster:scale-105 transition-transform duration-500 opacity-80"
             />
           ) : (
-            <div className="absolute inset-0 bg-slate-900" />
+            <div className="absolute inset-0 bg-zinc-950" />
           )}
 
           {/* Vignette / Glass gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30 group-hover/poster:via-black/20 transition-colors duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/30 group-hover/poster:via-black/30 transition-colors duration-300" />
 
-          {/* Center Glowing Play Button */}
+          {/* Center Glowing Crimson & White Play Button */}
           <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-sm">
             <div className="relative mb-4">
-              <div className="absolute -inset-2 rounded-full bg-brand-gradient opacity-75 blur-md group-hover/poster:opacity-100 group-hover/poster:scale-110 transition-all duration-300 animate-pulse" />
+              <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-[#ef233c] to-[#ff4d6d] opacity-75 blur-lg group-hover/poster:opacity-100 group-hover/poster:scale-110 transition-all duration-300 animate-pulse shadow-[0_0_35px_rgba(239,35,60,0.7)]" />
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleStartPlayback();
                 }}
-                className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-gradient text-white flex items-center justify-center shadow-2xl transform group-hover/poster:scale-110 active:scale-95 transition-all duration-200 border-2 border-white/30"
+                className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-[#ef233c] via-[#d90429] to-[#b8001f] hover:from-[#ff3b53] hover:to-[#ef233c] text-white flex items-center justify-center shadow-2xl transform group-hover/poster:scale-110 active:scale-95 transition-all duration-200 border-2 border-white/60 shadow-[0_0_25px_rgba(239,35,60,0.6)] cursor-pointer"
                 aria-label="Play Video Preview"
               >
-                <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-current ml-1" />
+                <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-white text-white ml-1 drop-shadow-md" />
               </button>
             </div>
 
-            <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-white/15 backdrop-blur-md border border-white/20 shadow-lg">
-                <Sparkles className="w-3.5 h-3.5 text-brand-primary" />
-                Click to Play Video Preview
+            <div className="space-y-1.5">
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold text-white bg-black/75 backdrop-blur-xl border border-[#ef233c]/50 shadow-lg group-hover/poster:border-[#ef233c] group-hover/poster:shadow-[0_0_20px_rgba(239,35,60,0.35)] transition-all">
+                <Sparkles className="w-3.5 h-3.5 text-[#ef233c] animate-pulse" />
+                <span>Click to Play Video Preview</span>
               </span>
-              <p className="text-[11px] text-slate-300 line-clamp-1 max-w-xs drop-shadow-md">
+              <p className="text-[11px] text-zinc-300 line-clamp-1 max-w-xs drop-shadow-md font-medium">
                 {title}
               </p>
             </div>
           </div>
 
-          {/* Bottom Duration & Quality Badge */}
+          {/* Bottom Duration & Quality Badge (Red & White Theme) */}
           <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
             {durationFormatted && (
-              <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-white bg-black/80 backdrop-blur-md border border-white/10 shadow-md">
+              <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-white bg-black/85 backdrop-blur-md border border-white/15 shadow-md">
                 {durationFormatted}
               </span>
             )}
-            <span className="px-2.5 py-1 rounded-lg text-xs font-bold text-brand-primary bg-black/80 backdrop-blur-md border border-brand-primary/30 shadow-md flex items-center gap-1">
-              <Film className="w-3 h-3" />
-              HD
+            <span className="px-2.5 py-1 rounded-lg text-xs font-bold text-white bg-black/85 backdrop-blur-md border border-[#ef233c]/50 shadow-md flex items-center gap-1.5">
+              <Film className="w-3.5 h-3.5 text-[#ef233c]" />
+              <span className="text-[#ef233c]">HD</span>
             </span>
           </div>
         </div>

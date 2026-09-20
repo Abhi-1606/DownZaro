@@ -24,12 +24,20 @@ interface FormatSelectorProps {
     format_label: string;
   }) => void;
   isDownloading?: boolean;
+  isAuthenticated?: boolean;
+  guestDownloadsCount?: number;
+  guestLimit?: number;
+  onOpenAuth?: (mode?: 'signin' | 'signup') => void;
 }
 
 export const FormatSelector: React.FC<FormatSelectorProps> = ({
   media,
   onStartDownload,
   isDownloading = false,
+  isAuthenticated = false,
+  guestDownloadsCount = 0,
+  guestLimit = 3,
+  onOpenAuth,
 }) => {
   const [activeTab, setActiveTab] = useState<'video' | 'audio' | 'thumbnail' | 'all_in_one'>('video');
 
@@ -173,6 +181,35 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
             </div>
           </button>
         </div>
+
+        {/* Guest Download Limit Status / Unlimited Announcement */}
+        {!isAuthenticated ? (
+          <div className="mb-4 p-3 rounded-xl bg-zinc-900/90 border border-white/10 flex items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-zinc-300 font-medium">
+                Guest Downloads: <strong className="text-white font-bold">{Math.min(guestDownloadsCount, guestLimit)} / {guestLimit} used</strong>
+              </span>
+            </div>
+            {onOpenAuth && (
+              <button
+                type="button"
+                onClick={() => onOpenAuth('signup')}
+                className="text-[11px] font-bold text-[#ef233c] hover:underline cursor-pointer flex items-center gap-1"
+              >
+                Sign In for Unlimited →
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mb-4 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs text-emerald-400 font-medium">
+            <div className="flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Unlimited Lossless Downloads Active</span>
+            </div>
+            <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full font-bold">UNLIMITED</span>
+          </div>
+        )}
 
         {/* Tab Content Display */}
         <div className="min-h-[220px]">

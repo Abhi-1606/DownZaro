@@ -8,6 +8,25 @@ export default {
   theme: {
     extend: {
       colors: {
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        primary: {
+          DEFAULT: 'var(--primary)',
+          foreground: '#ffffff',
+        },
+        secondary: {
+          DEFAULT: 'var(--secondary)',
+          foreground: '#ffffff',
+        },
+        destructive: {
+          DEFAULT: 'var(--destructive)',
+          foreground: '#ffffff',
+        },
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
+        },
+        border: 'var(--border)',
         brand: {
           primary: '#ef233c',      // Red Noir Crimson Accent
           secondary: '#d90429',    // Deep Crimson

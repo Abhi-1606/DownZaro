@@ -3,7 +3,6 @@ import {
   Link as LinkIcon,
   X,
   Clipboard,
-  Loader2,
   Youtube,
   Instagram,
   Twitter,
@@ -11,8 +10,9 @@ import {
   Globe,
   Film,
   Music,
-  ArrowRight,
 } from 'lucide-react';
+import { MorphingCtaButton } from '../ui/MorphingCtaButton';
+import { PlatformTicker } from '../ui/PlatformTicker';
 
 interface UrlInputProps {
   onFetch: (url: string) => void;
@@ -89,72 +89,137 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
 
   return (
     <div className="w-full max-w-4xl mx-auto">
+      {/* Radiant Prompt Input with Kinetic Rotating Gradient Border */}
+      <style>{`
+        @property --rotation {
+          syntax: '<angle>';
+          inherits: false;
+          initial-value: 0deg;
+        }
+        
+        @keyframes rotateRadiantBorder {
+          0% {
+            --rotation: 0deg;
+          }
+          100% {
+            --rotation: 360deg;
+          }
+        }
+
+        .radiant-input-container {
+          --border-size: 2px;
+          --gradient-conic: conic-gradient(
+            from var(--rotation) at 50% 50%,
+            #ef233c 0%,
+            #ff0055 25%,
+            #ff758c 45%,
+            #800020 60%,
+            #ef233c 100%
+          );
+          animation: rotateRadiantBorder 6s linear infinite;
+        }
+
+        .radiant-input-container::before {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: 9999px;
+          background: var(--gradient-conic);
+          z-index: 0;
+          filter: blur(10px);
+          opacity: 0.45;
+          transition: opacity 0.3s ease;
+        }
+
+        .radiant-input-container:focus-within::before {
+          opacity: 0.85;
+          filter: blur(14px);
+        }
+
+        .radiant-input-border {
+          position: absolute;
+          inset: 0;
+          border-radius: 9999px;
+          padding: var(--border-size);
+          background: var(--gradient-conic);
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          pointer-events: none;
+          z-index: 1;
+        }
+      `}</style>
+
       {/* Input Bar Form */}
-      <form onSubmit={handleSubmit} className="relative">
-        <div className="relative flex items-center rounded-full bg-zinc-950/70 border border-white/10 backdrop-blur-2xl shadow-[0_0_50px_rgba(0,0,0,0.9)] hover:border-white/20 focus-within:border-[#ef233c] focus-within:shadow-[0_0_30px_rgba(239,35,60,0.25)] transition-all duration-300 p-2 sm:p-2.5">
-          {/* Left Icon / Detected Platform Badge */}
-          <div className="pl-4 pr-2 flex items-center shrink-0">
-            {detectedPlatform ? (
-              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-white/10 shadow-sm border border-white/15 animate-in fade-in zoom-in-90 duration-200">
-                {detectedPlatform.id === 'youtube' && <Youtube className="w-3.5 h-3.5 text-[#ef233c]" />}
-                {detectedPlatform.id === 'instagram' && <Instagram className="w-3.5 h-3.5 text-pink-400" />}
-                {detectedPlatform.id === 'x' && <Twitter className="w-3.5 h-3.5 text-white" />}
-                {detectedPlatform.id === 'facebook' && <Facebook className="w-3.5 h-3.5 text-blue-400" />}
-                {detectedPlatform.id === 'direct' && <Film className="w-3.5 h-3.5 text-emerald-400" />}
-                {detectedPlatform.id === 'soundcloud' && <Music className="w-3.5 h-3.5 text-orange-400" />}
-                {['generic', 'reddit', 'twitch', 'vimeo', 'dailymotion', 'tiktok'].includes(detectedPlatform.id) && (
-                  <Globe className="w-3.5 h-3.5 text-[#ef233c]" />
-                )}
-                <span>{detectedPlatform.name}</span>
-              </span>
-            ) : (
-              <LinkIcon className="w-5 h-5 text-zinc-500" />
-            )}
-          </div>
+      <form onSubmit={handleSubmit} className="relative z-10">
+        <div className="radiant-input-container relative rounded-full bg-zinc-950/80 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,0,0,0.9)] transition-all duration-300">
+          {/* Animated Gradient Border */}
+          <div className="radiant-input-border rounded-full" />
 
-          {/* Main URL Text Input */}
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="Paste any media link (YouTube, Instagram, TikTok, X, Reddit, Vimeo...)"
-            disabled={isLoading}
-            className="w-full bg-transparent px-3 py-3 text-sm md:text-base font-normal text-white placeholder-zinc-500 outline-none disabled:opacity-50 font-inter"
-            aria-label="Media link URL input"
-          />
+          <div className="relative z-10 flex items-center p-2 sm:p-2.5">
+            {/* Left Icon / Detected Platform Badge */}
+            <div className="pl-4 pr-2 flex items-center shrink-0">
+              {detectedPlatform ? (
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-white/10 shadow-sm border border-white/15 animate-in fade-in zoom-in-90 duration-200">
+                  {detectedPlatform.id === 'youtube' && <Youtube className="w-3.5 h-3.5 text-[#ef233c]" />}
+                  {detectedPlatform.id === 'instagram' && <Instagram className="w-3.5 h-3.5 text-pink-400" />}
+                  {detectedPlatform.id === 'x' && <Twitter className="w-3.5 h-3.5 text-white" />}
+                  {detectedPlatform.id === 'facebook' && <Facebook className="w-3.5 h-3.5 text-blue-400" />}
+                  {detectedPlatform.id === 'direct' && <Film className="w-3.5 h-3.5 text-emerald-400" />}
+                  {detectedPlatform.id === 'soundcloud' && <Music className="w-3.5 h-3.5 text-orange-400" />}
+                  {['generic', 'reddit', 'twitch', 'vimeo', 'dailymotion', 'tiktok'].includes(detectedPlatform.id) && (
+                    <Globe className="w-3.5 h-3.5 text-[#ef233c]" />
+                  )}
+                  <span className="hidden sm:inline font-manrope">{detectedPlatform.name}</span>
+                </span>
+              ) : (
+                <LinkIcon className="w-5 h-5 text-zinc-500" />
+              )}
+            </div>
 
-          {/* Right Action Buttons */}
-          <div className="flex items-center gap-2 pr-1 shrink-0">
-            {/* Clear Button */}
-            {inputVal && !isLoading && (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="p-2 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
-                aria-label="Clear input"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            {/* Main URL Text Input */}
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputVal}
+              onChange={(e) => setInputVal(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              placeholder="Paste any media link (YouTube, Instagram, TikTok, X, Reddit, Vimeo...)"
+              disabled={isLoading}
+              className="w-full bg-transparent px-3 py-3 text-sm md:text-base font-normal text-white placeholder-zinc-500 outline-none disabled:opacity-50 font-inter"
+              aria-label="Media link URL input"
+            />
 
-            {/* Paste Button */}
-            {!inputVal && !isLoading && (
-              <button
-                type="button"
-                onClick={handlePaste}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-zinc-400 hover:text-white hover:bg-white/10 border border-white/5 transition-all"
-                aria-label="Paste from clipboard"
-              >
-                <Clipboard className="w-3.5 h-3.5 text-[#ef233c]" />
-                Paste
-              </button>
-            )}
+            {/* Right Action Buttons */}
+            <div className="flex items-center gap-2 pr-1 shrink-0">
+              {/* Clear Button */}
+              {inputVal && !isLoading && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="p-2 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
+                  aria-label="Clear input"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
 
-            {/* Submit / Loading Button */}
-            {isLoading ? (
-              <div className="flex items-center gap-2">
+              {/* Paste Button */}
+              {!inputVal && !isLoading && (
+                <button
+                  type="button"
+                  onClick={handlePaste}
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-zinc-400 hover:text-white hover:bg-white/10 border border-white/5 transition-all"
+                  aria-label="Paste from clipboard"
+                >
+                  <Clipboard className="w-3.5 h-3.5 text-[#ef233c]" />
+                  Paste
+                </button>
+              )}
+
+              {/* Cancel Button if Loading */}
+              {isLoading && onCancelFetch && (
                 <button
                   type="button"
                   onClick={onCancelFetch}
@@ -162,42 +227,27 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
                 >
                   Cancel
                 </button>
-                <div className="px-5 py-2.5 rounded-full bg-[#ef233c] text-white flex items-center gap-2 text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#ef233c]/40 animate-pulse">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Analyzing...</span>
-                </div>
-              </div>
-            ) : (
-              <button
+              )}
+
+              {/* Interactive Morphing CTA Button with Star Icon & Letter-by-Letter Text Swap */}
+              <MorphingCtaButton
                 type="submit"
+                isLoading={isLoading}
+                idleText="Fetch Media"
+                activeText="Analyzing..."
                 disabled={!inputVal.trim()}
-                className="shiny-cta group !py-2.5 !px-6 disabled:opacity-40 disabled:cursor-not-allowed transform active:scale-95"
-              >
-                <span className="relative z-10 flex items-center gap-2 text-white text-xs font-bold uppercase tracking-wider">
-                  Fetch Media <ArrowRight className="w-3.5 h-3.5 text-[#ef233c] group-hover:translate-x-1 transition-transform" />
-                </span>
-              </button>
-            )}
+              />
+            </div>
           </div>
         </div>
       </form>
 
-      {/* Platform Logo Strip (From Reference Design) */}
-      <div className="w-full mt-14 border-y border-white/5 bg-white/[0.01] backdrop-blur-sm py-6 opacity-60 hover:opacity-100 transition-opacity">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8">
-          <p className="text-xs font-bold tracking-widest text-zinc-500 uppercase shrink-0 font-manrope">
-            Supported Sources:
-          </p>
-          <div className="flex flex-wrap justify-center gap-6 sm:gap-10 items-center w-full text-xs font-semibold font-manrope text-zinc-400">
-            <div className="flex items-center gap-2 hover:text-white transition-colors"><div className="w-2 h-2 rounded-full bg-[#ef233c]" />YouTube 4K</div>
-            <div className="flex items-center gap-2 hover:text-white transition-colors"><div className="w-2 h-2 rounded-full bg-[#ef233c]" />Instagram Reels</div>
-            <div className="flex items-center gap-2 hover:text-white transition-colors"><div className="w-2 h-2 rounded-full bg-[#ef233c]" />TikTok No Watermark</div>
-            <div className="flex items-center gap-2 hover:text-white transition-colors"><div className="w-2 h-2 rounded-full bg-[#ef233c]" />X / Twitter</div>
-            <div className="flex items-center gap-2 hover:text-white transition-colors"><div className="w-2 h-2 rounded-full bg-[#ef233c]" />Reddit</div>
-            <div className="flex items-center gap-2 hover:text-white transition-colors"><div className="w-2 h-2 rounded-full bg-[#ef233c]" />Vimeo / 1000+</div>
-          </div>
-        </div>
+      {/* Horizontally Scrolling Platform Ticker with Gradient Fade & Hover-Pause */}
+      <div className="mt-10">
+        <PlatformTicker />
       </div>
     </div>
   );
 };
+
+export default UrlInput;
