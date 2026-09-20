@@ -10,6 +10,9 @@ import {
   Globe,
   Film,
   Music,
+  Sparkles,
+  Zap,
+  ArrowDownCircle,
 } from 'lucide-react';
 import { MorphingCtaButton } from '../ui/MorphingCtaButton';
 import { PlatformTicker } from '../ui/PlatformTicker';
@@ -20,10 +23,30 @@ interface UrlInputProps {
   onCancelFetch?: () => void;
 }
 
+const PLACEHOLDER_PROMPTS = [
+  'Paste any YouTube video or Shorts URL...',
+  'Paste Instagram Reel, Post, or Story link...',
+  'Paste TikTok video link without watermark...',
+  'Paste X (Twitter) video or media link...',
+  'Paste Facebook, Reddit, or Vimeo link...',
+  'Paste SoundCloud audio or 1,000+ media URLs...',
+];
+
 export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancelFetch }) => {
   const [inputVal, setInputVal] = useState('');
   const [detectedPlatform, setDetectedPlatform] = useState<{ id: string; name: string; color: string } | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Cycle placeholder prompts every 3.5 seconds when input is empty
+  useEffect(() => {
+    if (inputVal) return;
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDER_PROMPTS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [inputVal]);
 
   // Fast client-side instant platform detection
   useEffect(() => {
@@ -87,9 +110,29 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
     inputRef.current?.focus();
   };
 
+  // Drag & drop link handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const droppedText = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/uri-list');
+    if (droppedText) {
+      setInputVal(droppedText.trim());
+      onFetch(droppedText.trim());
+    }
+  };
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      {/* Radiant Prompt Input with Kinetic Rotating Gradient Border */}
+    <div id="url-input" className="w-full max-w-4xl mx-auto scroll-mt-28">
+      {/* Radiant Kinetic Rotating Glow Animation */}
       <style>{`
         @property --rotation {
           syntax: '<angle>';
@@ -116,24 +159,25 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
             #800020 60%,
             #ef233c 100%
           );
-          animation: rotateRadiantBorder 6s linear infinite;
+          animation: rotateRadiantBorder 5s linear infinite;
         }
 
         .radiant-input-container::before {
           content: '';
           position: absolute;
-          inset: -2px;
+          inset: -4px;
           border-radius: 9999px;
           background: var(--gradient-conic);
           z-index: 0;
-          filter: blur(10px);
-          opacity: 0.45;
-          transition: opacity 0.3s ease;
+          filter: blur(14px);
+          opacity: 0.55;
+          transition: opacity 0.3s ease, filter 0.3s ease;
         }
 
-        .radiant-input-container:focus-within::before {
-          opacity: 0.85;
-          filter: blur(14px);
+        .radiant-input-container:focus-within::before,
+        .radiant-input-container.is-drag-over::before {
+          opacity: 0.95;
+          filter: blur(20px);
         }
 
         .radiant-input-border {
@@ -151,43 +195,69 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
         }
       `}</style>
 
-      {/* Input Bar Form */}
-      <form onSubmit={handleSubmit} className="relative z-10">
-        <div className="radiant-input-container relative rounded-full bg-zinc-950/80 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,0,0,0.9)] transition-all duration-300">
-          {/* Animated Gradient Border */}
+      {/* Top Center MVP Focal Callout Pill */}
+      <div className="flex items-center justify-center mb-4">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-950/90 border border-[#ef233c]/40 shadow-[0_0_20px_rgba(239,35,60,0.3)] backdrop-blur-xl">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ef233c]" />
+          </span>
+          <span className="text-[11px] sm:text-xs font-bold text-white font-manrope tracking-wider uppercase flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#ef233c]" />
+            <span>Paste Media Link Below to Download</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Main Input Form with Glowing Glass Container */}
+      <form
+        onSubmit={handleSubmit}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className="relative z-10"
+      >
+        <div
+          className={`radiant-input-container relative rounded-full bg-zinc-950/90 backdrop-blur-2xl shadow-[0_0_80px_rgba(239,35,60,0.35)] transition-all duration-300 ${
+            isDragOver ? 'is-drag-over ring-4 ring-[#ef233c]/80 scale-[1.01]' : ''
+          }`}
+        >
+          {/* Animated Radiant Gradient Border */}
           <div className="radiant-input-border rounded-full" />
 
           <div className="relative z-10 flex items-center p-2 sm:p-2.5">
             {/* Left Icon / Detected Platform Badge */}
-            <div className="pl-4 pr-2 flex items-center shrink-0">
+            <div className="pl-3 sm:pl-4 pr-2 flex items-center shrink-0">
               {detectedPlatform ? (
                 <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-white/10 shadow-sm border border-white/15 animate-in fade-in zoom-in-90 duration-200">
-                  {detectedPlatform.id === 'youtube' && <Youtube className="w-3.5 h-3.5 text-[#ef233c]" />}
-                  {detectedPlatform.id === 'instagram' && <Instagram className="w-3.5 h-3.5 text-pink-400" />}
-                  {detectedPlatform.id === 'x' && <Twitter className="w-3.5 h-3.5 text-white" />}
-                  {detectedPlatform.id === 'facebook' && <Facebook className="w-3.5 h-3.5 text-blue-400" />}
-                  {detectedPlatform.id === 'direct' && <Film className="w-3.5 h-3.5 text-emerald-400" />}
-                  {detectedPlatform.id === 'soundcloud' && <Music className="w-3.5 h-3.5 text-orange-400" />}
+                  {detectedPlatform.id === 'youtube' && <Youtube className="w-4 h-4 text-[#ef233c]" />}
+                  {detectedPlatform.id === 'instagram' && <Instagram className="w-4 h-4 text-pink-400" />}
+                  {detectedPlatform.id === 'x' && <Twitter className="w-4 h-4 text-white" />}
+                  {detectedPlatform.id === 'facebook' && <Facebook className="w-4 h-4 text-blue-400" />}
+                  {detectedPlatform.id === 'direct' && <Film className="w-4 h-4 text-emerald-400" />}
+                  {detectedPlatform.id === 'soundcloud' && <Music className="w-4 h-4 text-orange-400" />}
                   {['generic', 'reddit', 'twitch', 'vimeo', 'dailymotion', 'tiktok'].includes(detectedPlatform.id) && (
-                    <Globe className="w-3.5 h-3.5 text-[#ef233c]" />
+                    <Globe className="w-4 h-4 text-[#ef233c]" />
                   )}
                   <span className="hidden sm:inline font-manrope">{detectedPlatform.name}</span>
                 </span>
               ) : (
-                <LinkIcon className="w-5 h-5 text-zinc-500" />
+                <div className="w-8 h-8 rounded-full bg-[#ef233c]/15 text-[#ef233c] flex items-center justify-center border border-[#ef233c]/30 shadow-[0_0_15px_rgba(239,35,60,0.3)]">
+                  <LinkIcon className="w-4 h-4" />
+                </div>
               )}
             </div>
 
-            {/* Main URL Text Input */}
+            {/* Main URL Text Input with High-Contrast Typography */}
             <input
               ref={inputRef}
               type="text"
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder="Paste any media link (YouTube, Instagram, TikTok, X, Reddit, Vimeo...)"
+              placeholder={PLACEHOLDER_PROMPTS[placeholderIndex]}
               disabled={isLoading}
-              className="w-full bg-transparent px-3 py-3 text-sm md:text-base font-normal text-white placeholder-zinc-500 outline-none disabled:opacity-50 font-inter"
+              className="w-full bg-transparent px-3 py-3 text-sm md:text-base font-medium text-white placeholder:text-zinc-400 outline-none disabled:opacity-50 font-inter tracking-wide"
               aria-label="Media link URL input"
             />
 
@@ -198,23 +268,25 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="p-2 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition-colors"
+                  className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                   aria-label="Clear input"
+                  title="Clear text"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
 
-              {/* Paste Button */}
+              {/* Paste Button (Prominent Glowing Accent) */}
               {!inputVal && !isLoading && (
                 <button
                   type="button"
                   onClick={handlePaste}
-                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-zinc-400 hover:text-white hover:bg-white/10 border border-white/5 transition-all"
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-white bg-white/10 hover:bg-[#ef233c]/25 border border-white/15 hover:border-[#ef233c]/50 shadow-sm transition-all cursor-pointer transform active:scale-95"
                   aria-label="Paste from clipboard"
+                  title="Paste link from clipboard"
                 >
                   <Clipboard className="w-3.5 h-3.5 text-[#ef233c]" />
-                  Paste
+                  <span>Paste</span>
                 </button>
               )}
 
@@ -223,13 +295,13 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
                 <button
                   type="button"
                   onClick={onCancelFetch}
-                  className="px-3 py-2 rounded-full text-xs font-semibold text-zinc-400 hover:text-red-400 transition-colors"
+                  className="px-3 py-2 rounded-full text-xs font-semibold text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
               )}
 
-              {/* Interactive Morphing CTA Button with Star Icon & Letter-by-Letter Text Swap */}
+              {/* Interactive Morphing CTA Button */}
               <MorphingCtaButton
                 type="submit"
                 isLoading={isLoading}
@@ -242,8 +314,24 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
         </div>
       </form>
 
-      {/* Horizontally Scrolling Platform Ticker with Gradient Fade & Hover-Pause */}
-      <div className="mt-10">
+      {/* Under-Input Guidance & Guarantees Strip */}
+      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 px-4 text-[11.5px] text-zinc-400 font-inter">
+        <div className="flex items-center gap-2">
+          <ArrowDownCircle className="w-3.5 h-3.5 text-[#ef233c]" />
+          <span>Supports YouTube, Instagram, TikTok, X, Reddit, Vimeo & 1,000+ sites</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1 text-zinc-300 font-medium">
+            <Zap className="w-3 h-3 text-[#ef233c]" />
+            <span>4K 60fps & 320k MP3</span>
+          </span>
+          <span className="text-zinc-600">•</span>
+          <span className="text-zinc-400">100% Free & No Ads</span>
+        </div>
+      </div>
+
+      {/* Horizontally Scrolling Platform Ticker */}
+      <div className="mt-8">
         <PlatformTicker />
       </div>
     </div>
@@ -251,3 +339,4 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
 };
 
 export default UrlInput;
+
