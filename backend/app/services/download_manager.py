@@ -334,12 +334,15 @@ class DownloadManager:
         custom_env["REQUESTS_CA_BUNDLE"] = ca_path
         custom_env["CURL_CA_BUNDLE"] = ca_path
 
+        # preexec_fn=os.setsid is Unix-only; guard it so the code doesn't crash
+        # inside Vercel's sandbox or on Windows.
+        _preexec = os.setsid if hasattr(os, "setsid") else None
         proc = await asyncio.create_subprocess_exec(
             *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=custom_env,
-            preexec_fn=os.setsid
+            preexec_fn=_preexec,
         )
         job["proc"] = proc
 
