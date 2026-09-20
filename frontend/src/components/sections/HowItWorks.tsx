@@ -25,23 +25,23 @@ export const HowItWorks: React.FC = () => {
   ];
 
   return (
-    <section id="how-it-works" className="py-24 px-6 max-w-7xl mx-auto border-t border-white/5 relative z-10">
-      <div className="text-center mb-16 animate-fade-up">
+    <section id="how-it-works" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/5 relative z-10 scroll-mt-24">
+      <div className="text-center mb-14 sm:mb-16 animate-fade-up max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4">
           <span className="w-1.5 h-1.5 rounded-full bg-[#ef233c] animate-pulse"></span>
           <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider font-manrope">
             Simple Workflow
           </span>
         </div>
-        <h2 className="text-3xl md:text-5xl font-semibold text-white tracking-tight font-manrope mb-4">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-white tracking-tight font-manrope mb-4">
           How <span className="text-[#ef233c]">DownZaro</span> Works
         </h2>
-        <p className="text-zinc-400 text-base max-w-xl mx-auto">
+        <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto font-inter font-light">
           Three effortless steps to capture high-definition media from anywhere on the web.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 relative items-stretch">
         {steps.map((step, idx) => {
           const Icon = step.icon;
           return (

@@ -18,15 +18,15 @@ import {
 
 export const MediaVaultSection: React.FC = () => {
   return (
-    <section id="media-vault" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/5 relative z-10 scroll-mt-24">
-      <div className="text-center mb-16 animate-fade-up">
+    <section id="media-vault" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/5 relative z-10 scroll-mt-24">
+      <div className="text-center mb-14 sm:mb-16 animate-fade-up max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4 shadow-[0_0_20px_rgba(239,35,60,0.15)]">
           <FolderOpen className="w-3.5 h-3.5 text-[#ef233c]" />
           <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider font-manrope">
             Interactive Media Vault
           </span>
         </div>
-        <h2 className="text-3xl md:text-5xl font-semibold text-white tracking-tight font-manrope mb-4">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-white tracking-tight font-manrope mb-4">
           One Engine. <span className="text-[#ef233c]">Every Format You Need.</span>
         </h2>
         <p className="text-zinc-400 text-sm md:text-base max-w-xl mx-auto font-inter font-light">
@@ -34,10 +34,10 @@ export const MediaVaultSection: React.FC = () => {
         </p>
       </div>
 
-      {/* Interactive Folders Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
+      {/* Interactive Folders Grid (Equally spaced across all 4 columns) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 items-stretch">
         {/* Folder 1: 4K Video */}
-        <div className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-zinc-950/40 border border-white/5 backdrop-blur-sm hover:border-white/15 transition-all w-full max-w-[280px]">
+        <div className="flex flex-col items-center justify-between gap-4 p-6 rounded-3xl bg-zinc-950/50 border border-white/10 backdrop-blur-md hover:border-[#ef233c]/40 hover:bg-zinc-950/70 transition-all w-full">
           <div className="py-6">
             <InteractiveFolder
               size={1.15}
@@ -66,7 +66,7 @@ export const MediaVaultSection: React.FC = () => {
         </div>
 
         {/* Folder 2: Studio Audio */}
-        <div className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-zinc-950/40 border border-white/5 backdrop-blur-sm hover:border-white/15 transition-all w-full max-w-[280px]">
+        <div className="flex flex-col items-center justify-between gap-4 p-6 rounded-3xl bg-zinc-950/50 border border-white/10 backdrop-blur-md hover:border-[#ff4d6d]/40 hover:bg-zinc-950/70 transition-all w-full">
           <div className="py-6">
             <InteractiveFolder
               size={1.15}
@@ -95,7 +95,7 @@ export const MediaVaultSection: React.FC = () => {
         </div>
 
         {/* Folder 3: HD Artwork */}
-        <div className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-zinc-950/40 border border-white/5 backdrop-blur-sm hover:border-white/15 transition-all w-full max-w-[280px]">
+        <div className="flex flex-col items-center justify-between gap-4 p-6 rounded-3xl bg-zinc-950/50 border border-white/10 backdrop-blur-md hover:border-[#b5179e]/40 hover:bg-zinc-950/70 transition-all w-full">
           <div className="py-6">
             <InteractiveFolder
               size={1.15}
@@ -124,7 +124,7 @@ export const MediaVaultSection: React.FC = () => {
         </div>
 
         {/* Folder 4: All-in-One Package */}
-        <div className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-zinc-950/40 border border-white/5 backdrop-blur-sm hover:border-white/15 transition-all w-full max-w-[280px]">
+        <div className="flex flex-col items-center justify-between gap-4 p-6 rounded-3xl bg-zinc-950/50 border border-white/10 backdrop-blur-md hover:border-amber-500/40 hover:bg-zinc-950/70 transition-all w-full">
           <div className="py-6">
             <InteractiveFolder
               size={1.15}

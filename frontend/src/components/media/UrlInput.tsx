@@ -131,7 +131,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({ onFetch, isLoading, onCancel
   };
 
   return (
-    <div id="url-input" className="w-full max-w-4xl mx-auto scroll-mt-28">
+    <div id="url-input" className="w-full max-w-5xl mx-auto scroll-mt-28">
       {/* Radiant Kinetic Rotating Glow Animation */}
       <style>{`
         @property --rotation {

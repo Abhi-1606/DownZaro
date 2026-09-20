@@ -10,7 +10,7 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ user }) => {
   return (
     <TubesBackground className="w-full">
-      <section className="text-center pt-28 sm:pt-36 pb-8 px-4 max-w-5xl mx-auto relative z-10">
+      <section className="text-center pt-28 sm:pt-36 pb-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto relative z-10">
         {/* 1. Live Status / User Welcome Announcement Pill */}
         {user ? (
           <div
@@ -67,7 +67,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ user }) => {
 
         {/* 3. Hero Subtitle */}
         <p
-          className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed font-inter font-light animate-fade-up"
+          className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto mb-10 leading-relaxed font-inter font-light animate-fade-up"
           style={{ animationDelay: '0.3s' }}
         >
           {user
@@ -75,15 +75,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ user }) => {
             : 'Your Media, Your Way. High-speed lossless downloading for 4K video, 320kbps MP3 audio, and HD covers from 1,000+ sites.'}
         </p>
 
-        {/* 4. Real Capabilities & Specs Strip */}
+        {/* 4. Real Capabilities & Specs Strip (Equally distributed 3-column bar) */}
         <div
-          className="max-w-2xl mx-auto mb-10 p-4 sm:p-5 rounded-2xl bg-zinc-950/80 border border-white/10 backdrop-blur-xl shadow-2xl flex flex-col sm:flex-row items-center justify-around gap-6 sm:gap-4 font-manrope animate-fade-up"
+          className="max-w-4xl mx-auto mb-10 p-5 sm:p-6 rounded-2xl bg-zinc-950/80 border border-white/10 backdrop-blur-xl shadow-2xl grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-0 divide-y sm:divide-y-0 sm:divide-x divide-white/10 font-manrope animate-fade-up"
           style={{ animationDelay: '0.35s' }}
         >
           {/* Real Spec 1: Platform Support */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center py-2 sm:py-0 sm:px-4">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Globe className="w-3 h-3 text-[#ef233c]" />
+              <Globe className="w-3.5 h-3.5 text-[#ef233c]" />
               Platform Support
             </span>
             <div className="text-xl sm:text-2xl font-black text-white flex items-center">
@@ -92,12 +92,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="hidden sm:block w-px h-10 bg-white/10" />
-
           {/* Real Spec 2: Audio Ceiling */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center py-2 sm:py-0 sm:px-4">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Music className="w-3 h-3 text-[#ef233c]" />
+              <Music className="w-3.5 h-3.5 text-[#ef233c]" />
               Max Audio Bitrate
             </span>
             <div className="text-xl sm:text-2xl font-black text-white flex items-center">
@@ -106,12 +104,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="hidden sm:block w-px h-10 bg-white/10" />
-
           {/* Real Spec 3: Video Quality */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center py-2 sm:py-0 sm:px-4">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-[#ef233c]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#ef233c]" />
               Video Ceiling
             </span>
             <div className="text-xl sm:text-2xl font-black text-white flex items-center">
