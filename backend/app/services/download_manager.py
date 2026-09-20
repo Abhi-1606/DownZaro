@@ -11,10 +11,10 @@ import certifi
 from typing import Dict, Any, Optional, List
 from collections import defaultdict
 
-from backend.app.config import settings
-from backend.app.core.exceptions import DownZaroException, MediaNotFoundException
-from backend.app.core.security import sanitize_filename, sanitize_format_id
-from backend.app.services.system_checker import get_ffmpeg_binary_path, setup_ffmpeg_symlinks
+from app.config import settings
+from app.core.exceptions import DownZaroException, MediaNotFoundException
+from app.core.security import sanitize_filename, sanitize_format_id
+from app.services.system_checker import get_ffmpeg_binary_path, setup_ffmpeg_symlinks
 
 logger = logging.getLogger("downzaro.download_manager")
 

@@ -9,4 +9,4 @@ for path in [str(project_root), str(current_dir)]:
     if path not in sys.path:
         sys.path.insert(0, path)
 
-from backend.app.main import app
+from app.main import app

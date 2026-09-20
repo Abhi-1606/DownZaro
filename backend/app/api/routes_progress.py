@@ -3,8 +3,8 @@ import asyncio
 from fastapi import APIRouter, Request
 from sse_starlette.sse import EventSourceResponse
 
-from backend.app.services.download_manager import download_manager, PROGRESS_LISTENERS, JOBS
-from backend.app.core.exceptions import DownZaroException
+from app.services.download_manager import download_manager, PROGRESS_LISTENERS, JOBS
+from app.core.exceptions import DownZaroException
 
 router = APIRouter(tags=["Progress SSE"])
 

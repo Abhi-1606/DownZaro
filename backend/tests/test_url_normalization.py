@@ -1,11 +1,11 @@
 import pytest
-from backend.app.services.url_parser import (
+from app.services.url_parser import (
     clean_raw_input,
     parse_time_to_seconds,
     extract_url_from_text,
     normalize_media_url
 )
-from backend.app.core.exceptions import InvalidURLException, PlaylistNotAllowedException
+from app.core.exceptions import InvalidURLException, PlaylistNotAllowedException
 
 def test_clean_raw_input():
     dirty = "  \u200Bhttps://example.com/video\uFEFF   "

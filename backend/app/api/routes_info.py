@@ -3,13 +3,13 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional
 
-from backend.app.config import settings
-from backend.app.core.rate_limiter import rate_limiter, get_client_ip
-from backend.app.core.security import validate_url_ssrf, resolve_redirects_safely
-from backend.app.services.url_parser import normalize_media_url
-from backend.app.services.ytdlp_service import ytdlp_service
-from backend.app.services.format_processor import process_media_formats
-from backend.app.services.stream_proxy import register_stream_url
+from app.config import settings
+from app.core.rate_limiter import rate_limiter, get_client_ip
+from app.core.security import validate_url_ssrf, resolve_redirects_safely
+from app.services.url_parser import normalize_media_url
+from app.services.ytdlp_service import ytdlp_service
+from app.services.format_processor import process_media_formats
+from app.services.stream_proxy import register_stream_url
 
 router = APIRouter(tags=["Media Info"])
 

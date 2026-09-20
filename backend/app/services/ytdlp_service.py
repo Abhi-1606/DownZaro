@@ -5,15 +5,15 @@ import asyncio
 import logging
 import shutil
 from typing import Dict, Any, Optional
-from backend.app.config import settings
-from backend.app.core.exceptions import (
+from app.config import settings
+from app.core.exceptions import (
     DownZaroException,
     MediaNotFoundException,
     DRMProtectedException,
     LiveStreamException,
     UnsupportedPlatformException,
 )
-from backend.app.services.system_checker import get_ffmpeg_binary_path, setup_ffmpeg_symlinks
+from app.services.system_checker import get_ffmpeg_binary_path, setup_ffmpeg_symlinks
 
 logger = logging.getLogger("downzaro.ytdlp")
 

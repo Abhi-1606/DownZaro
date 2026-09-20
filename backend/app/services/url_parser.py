@@ -2,7 +2,7 @@ import re
 import urllib.parse
 from typing import Dict, Any, Optional, Tuple
 import idna
-from backend.app.core.exceptions import InvalidURLException, PlaylistNotAllowedException
+from app.core.exceptions import InvalidURLException, PlaylistNotAllowedException
 
 # Common tracking parameters to strip for canonicalization
 TRACKING_PARAMS = {

@@ -4,8 +4,8 @@ import urllib.parse
 import unicodedata
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
-from backend.app.services.download_manager import download_manager
-from backend.app.core.exceptions import DownZaroException
+from app.services.download_manager import download_manager
+from app.core.exceptions import DownZaroException
 
 router = APIRouter(tags=["File Delivery"])
 

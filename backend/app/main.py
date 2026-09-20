@@ -6,18 +6,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
-from backend.app.config import settings
-from backend.app.core.exceptions import DownZaroException
-from backend.app.services.system_checker import verify_system_dependencies
-from backend.app.services.storage_cleaner import cleanup_expired_temp_files
+from app.config import settings
+from app.core.exceptions import DownZaroException
+from app.services.system_checker import verify_system_dependencies
+from app.services.storage_cleaner import cleanup_expired_temp_files
 
-from backend.app.api.routes_health import router as health_router
-from backend.app.api.routes_url import router as url_router
-from backend.app.api.routes_info import router as info_router
-from backend.app.api.routes_stream import router as stream_router
-from backend.app.api.routes_download import router as download_router
-from backend.app.api.routes_progress import router as progress_router
-from backend.app.api.routes_file import router as file_router
+from app.api.routes_health import router as health_router
+from app.api.routes_url import router as url_router
+from app.api.routes_info import router as info_router
+from app.api.routes_stream import router as stream_router
+from app.api.routes_download import router as download_router
+from app.api.routes_progress import router as progress_router
+from app.api.routes_file import router as file_router
 
 # Configure logging
 logging.basicConfig(

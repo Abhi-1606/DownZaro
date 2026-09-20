@@ -10,10 +10,17 @@ logger = logging.getLogger("downzaro.system")
 def setup_ffmpeg_symlinks() -> str:
     """
     Ensures ffmpeg and ffprobe are available in a predictable directory.
-    Creates symlinks in backend/venv/bin if not already present.
+    Creates symlinks in backend/venv/bin or /tmp/bin if not already present.
     """
     venv_bin = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "venv", "bin"))
-    os.makedirs(venv_bin, exist_ok=True)
+    try:
+        os.makedirs(venv_bin, exist_ok=True)
+    except Exception:
+        venv_bin = "/tmp/bin"
+        try:
+            os.makedirs(venv_bin, exist_ok=True)
+        except Exception:
+            pass
     
     ffmpeg_target = os.path.join(venv_bin, "ffmpeg")
     ffprobe_target = os.path.join(venv_bin, "ffprobe")

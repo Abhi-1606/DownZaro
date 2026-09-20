@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from backend.app.config import settings
-from backend.app.services.system_checker import verify_system_dependencies
-from backend.app.models.schemas import HealthResponse
+from app.config import settings
+from app.services.system_checker import verify_system_dependencies
+from app.models.schemas import HealthResponse
 
 router = APIRouter(tags=["Health"])
 

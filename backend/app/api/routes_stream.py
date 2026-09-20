@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
-from backend.app.core.exceptions import DownZaroException
-from backend.app.services.stream_proxy import get_stream_url, proxy_media_stream
+from app.core.exceptions import DownZaroException
+from app.services.stream_proxy import get_stream_url, proxy_media_stream
 
 router = APIRouter(tags=["Stream Proxy"])
 

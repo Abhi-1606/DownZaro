@@ -120,9 +120,16 @@ export const App: React.FC = () => {
         signal: controller.signal,
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text || `Server error (${res.status})` };
+      }
+
       if (!res.ok) {
-        throw new Error(data.message || data.detail || 'Could not fetch media info.');
+        throw new Error(data.message || data.detail || `Server returned error (${res.status})`);
       }
 
       setMediaInfo(data);
@@ -172,7 +179,14 @@ export const App: React.FC = () => {
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text || `Server error (${res.status})` };
+      }
+
       if (!res.ok) {
         alert(data.message || 'Failed to initialize download.');
         return;

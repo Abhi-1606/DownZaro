@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
-from backend.app.config import settings
-from backend.app.core.rate_limiter import rate_limiter, get_client_ip
-from backend.app.core.security import validate_url_ssrf, resolve_redirects_safely
-from backend.app.services.url_parser import normalize_media_url
-from backend.app.models.schemas import URLParseRequest, URLParseResponse
+from app.config import settings
+from app.core.rate_limiter import rate_limiter, get_client_ip
+from app.core.security import validate_url_ssrf, resolve_redirects_safely
+from app.services.url_parser import normalize_media_url
+from app.models.schemas import URLParseRequest, URLParseResponse
 
 router = APIRouter(tags=["URL"])
 

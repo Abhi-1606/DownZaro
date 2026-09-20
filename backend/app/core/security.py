@@ -5,7 +5,7 @@ import urllib.parse
 from typing import Optional, Tuple, List
 import httpx
 import idna
-from backend.app.core.exceptions import SSRFBlockedException, InvalidURLException
+from app.core.exceptions import SSRFBlockedException, InvalidURLException
 
 FORBIDDEN_HOSTS = {
     "localhost",

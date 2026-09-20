@@ -3,7 +3,7 @@ import time
 import shutil
 import asyncio
 import logging
-from backend.app.config import settings
+from app.config import settings
 
 logger = logging.getLogger("downzaro.cleaner")
 

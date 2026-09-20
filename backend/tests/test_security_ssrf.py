@@ -1,6 +1,6 @@
 import pytest
-from backend.app.core.security import validate_url_ssrf, sanitize_format_id, sanitize_filename
-from backend.app.core.exceptions import SSRFBlockedException, InvalidURLException
+from app.core.security import validate_url_ssrf, sanitize_format_id, sanitize_filename
+from app.core.exceptions import SSRFBlockedException, InvalidURLException
 
 def test_ssrf_blocks_loopback_and_localhost():
     with pytest.raises(SSRFBlockedException):

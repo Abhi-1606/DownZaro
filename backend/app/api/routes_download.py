@@ -2,12 +2,12 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
-from backend.app.config import settings
-from backend.app.core.rate_limiter import rate_limiter, get_client_ip
-from backend.app.core.security import validate_url_ssrf, sanitize_format_id
-from backend.app.services.url_parser import normalize_media_url
-from backend.app.services.download_manager import download_manager
-from backend.app.core.exceptions import DownZaroException
+from app.config import settings
+from app.core.rate_limiter import rate_limiter, get_client_ip
+from app.core.security import validate_url_ssrf, sanitize_format_id
+from app.services.url_parser import normalize_media_url
+from app.services.download_manager import download_manager
+from app.core.exceptions import DownZaroException
 
 router = APIRouter(tags=["Downloads"])
 

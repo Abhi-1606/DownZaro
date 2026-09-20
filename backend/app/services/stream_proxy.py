@@ -3,7 +3,7 @@ import httpx
 from typing import Optional, AsyncGenerator
 from fastapi import Request, Response
 from fastapi.responses import StreamingResponse
-from backend.app.core.exceptions import DownZaroException
+from app.core.exceptions import DownZaroException
 
 logger = logging.getLogger("downzaro.stream")
 

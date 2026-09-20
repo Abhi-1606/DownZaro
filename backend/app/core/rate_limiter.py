@@ -2,7 +2,7 @@ import time
 from collections import defaultdict
 from typing import Dict, List
 from fastapi import Request
-from backend.app.core.exceptions import RateLimitException
+from app.core.exceptions import RateLimitException
 
 class SlidingWindowRateLimiter:
     """Sliding window rate limiter per client IP."""
