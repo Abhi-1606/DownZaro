@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
                 setActiveView('home');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`text-sm font-medium transition-colors cursor-pointer ${
+              className={`text-sm font-medium transition-colors ${
                 activeView === 'home'
                   ? 'text-white font-semibold'
                   : 'text-zinc-400 hover:text-white'
@@ -128,31 +128,25 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
             >
               How It Works
             </button>
             <button
-              onClick={() => scrollToSection('media-vault')}
-              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer"
-            >
-              Formats
-            </button>
-            <button
               onClick={() => scrollToSection('features')}
-              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
             >
               Features
             </button>
             <button
               onClick={() => scrollToSection('faq')}
-              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
             >
               FAQ
             </button>
             <button
               onClick={() => setActiveView('history')}
-              className={`text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`text-sm font-medium flex items-center gap-1.5 transition-colors ${
                 activeView === 'history'
                   ? 'text-[#ef233c] font-semibold'
                   : 'text-zinc-400 hover:text-white'
@@ -325,12 +319,6 @@ export const Header: React.FC<HeaderProps> = ({
               className="w-full text-left px-3 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer"
             >
               How It Works
-            </button>
-            <button
-              onClick={() => scrollToSection('media-vault')}
-              className="w-full text-left px-3 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer"
-            >
-              Formats
             </button>
             <button
               onClick={() => scrollToSection('features')}

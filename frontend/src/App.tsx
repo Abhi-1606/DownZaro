@@ -354,7 +354,7 @@ export const App: React.FC = () => {
           <>
             {/* First-time Creator Rights Notice */}
             {showNotice && (
-              <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+              <div className="max-w-4xl mx-auto px-4 pt-4">
                 <div className="p-3.5 rounded-2xl bg-brand-primary/10 border border-brand-primary/30 text-xs text-light-text dark:text-dark-text flex items-center justify-between gap-3 shadow-sm">
                   <div className="flex items-center gap-2.5">
                     <ShieldCheck className="w-5 h-5 text-brand-primary shrink-0" />
@@ -364,7 +364,7 @@ export const App: React.FC = () => {
                   </div>
                   <button
                     onClick={dismissNotice}
-                    className="p-1 rounded-full text-light-muted dark:text-dark-muted hover:text-light-text dark:hover:text-dark-text cursor-pointer"
+                    className="p-1 rounded-full text-light-muted dark:text-dark-muted hover:text-light-text dark:hover:text-dark-text"
                     aria-label="Dismiss notice"
                   >
                     <X className="w-4 h-4" />
@@ -377,7 +377,7 @@ export const App: React.FC = () => {
             <HeroSection user={auth.user} />
 
             {/* Smart URL Bar Input */}
-            <div className="px-4 sm:px-6 lg:px-8">
+            <div className="px-4">
               <UrlInput
                 onFetch={handleFetch}
                 isLoading={isLoading}
@@ -387,11 +387,11 @@ export const App: React.FC = () => {
 
             {/* Extraction Error Banner */}
             {fetchError && (
-              <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 flex items-start gap-3 shadow-lg">
+              <div className="max-w-4xl mx-auto px-4 mt-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-bold text-sm font-manrope">{fetchError.title}</h4>
+                    <h4 className="font-bold text-sm">{fetchError.title}</h4>
                     <p className="text-xs text-red-400 mt-0.5 leading-relaxed">{fetchError.message}</p>
                   </div>
                 </div>
@@ -399,7 +399,7 @@ export const App: React.FC = () => {
             )}
 
             {/* Active Download Progress List */}
-            <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div className="px-4">
               <JobProgressList
                 jobs={activeJobs}
                 onCancelJob={handleCancelJob}
@@ -411,7 +411,7 @@ export const App: React.FC = () => {
 
             {/* Media Preview & Format Selector */}
             {mediaInfo && (
-              <div className="px-4 sm:px-6 lg:px-8">
+              <div className="px-4">
                 <MediaPreview
                   info={mediaInfo}
                   onStartDownload={handleStartDownload}
@@ -426,10 +426,10 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            {/* Structured Landing Sections: How It Works -> Formats & Media Vault -> Features & Architecture -> FAQ */}
+            {/* Landing Sections: Features, How It Works, Media Vault, FAQ */}
+            <FeaturesSection />
             <HowItWorks />
             <MediaVaultSection />
-            <FeaturesSection />
             <FaqAccordion />
           </>
         )}

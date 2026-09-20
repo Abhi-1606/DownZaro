@@ -92,9 +92,9 @@ export const FaqAccordion: React.FC = () => {
   };
 
   return (
-    <section id="faq" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-white/5 relative z-10 scroll-mt-24">
+    <section id="faq" className="py-24 px-4 sm:px-6 max-w-5xl mx-auto border-t border-white/5 relative z-10">
       {/* Section Header */}
-      <div className="text-center mb-12 sm:mb-14 animate-fade-up max-w-3xl mx-auto">
+      <div className="text-center mb-10 animate-fade-up">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4">
           <HelpCircle className="w-3.5 h-3.5 text-[#ef233c]" />
           <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider font-manrope">
