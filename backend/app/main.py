@@ -29,19 +29,26 @@ logger = logging.getLogger("downzaro")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing DownZaro Backend Server...")
-    # Verify yt-dlp and ffmpeg on startup
-    diagnostics = verify_system_dependencies()
-    if not diagnostics["ytdlp_installed"]:
-        logger.warning("⚠️  yt-dlp is not detected or executable. Please install yt-dlp.")
-    if not diagnostics["ffmpeg_installed"]:
-        logger.warning("⚠️  ffmpeg is not detected or executable. Media merging may be degraded.")
+    try:
+        diagnostics = verify_system_dependencies()
+        if not diagnostics["ytdlp_installed"]:
+            logger.warning("⚠️  yt-dlp is not detected or executable. Please install yt-dlp.")
+        if not diagnostics["ffmpeg_installed"]:
+            logger.warning("⚠️  ffmpeg is not detected or executable. Media merging may be degraded.")
+    except Exception as e:
+        logger.warning(f"Startup diagnostic check warning: {e}")
 
     # Start background cleaner task
-    cleaner_task = asyncio.create_task(cleanup_expired_temp_files())
+    cleaner_task = None
+    try:
+        cleaner_task = asyncio.create_task(cleanup_expired_temp_files())
+    except Exception:
+        pass
     
     yield
 
-    cleaner_task.cancel()
+    if cleaner_task:
+        cleaner_task.cancel()
     logger.info("Shutting down DownZaro Backend Server...")
 
 app = FastAPI(
@@ -54,8 +61,8 @@ app = FastAPI(
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins_list,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
