@@ -18,7 +18,7 @@ import {
 
 export const MediaVaultSection: React.FC = () => {
   return (
-    <section className="py-20 px-6 max-w-7xl mx-auto border-t border-white/5 relative z-10">
+    <section id="media-vault" className="py-20 px-6 max-w-7xl mx-auto border-t border-white/5 relative z-10 scroll-mt-24">
       <div className="text-center mb-16 animate-fade-up">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4 shadow-[0_0_20px_rgba(239,35,60,0.15)]">
           <FolderOpen className="w-3.5 h-3.5 text-[#ef233c]" />

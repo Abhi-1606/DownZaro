@@ -426,10 +426,10 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            {/* Landing Sections: Features, How It Works, Media Vault, FAQ */}
-            <FeaturesSection />
+            {/* Structured Landing Sections: How It Works -> Formats & Media Vault -> Features & Architecture -> FAQ */}
             <HowItWorks />
             <MediaVaultSection />
+            <FeaturesSection />
             <FaqAccordion />
           </>
         )}
