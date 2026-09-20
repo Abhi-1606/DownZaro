@@ -17,7 +17,6 @@ from app.api.routes_info import router as info_router
 from app.api.routes_stream import router as stream_router
 from app.api.routes_download import router as download_router
 from app.api.routes_progress import router as progress_router
-from app.api.routes_stream_download import router as stream_download_router
 from app.api.routes_file import router as file_router
 
 # Configure logging
@@ -110,7 +109,6 @@ app.include_router(stream_router)
 app.include_router(download_router)
 app.include_router(progress_router)
 app.include_router(file_router)
-app.include_router(stream_download_router)
 
 @app.get("/")
 async def root():

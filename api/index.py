@@ -1,19 +1,12 @@
 import sys
-import os
 from pathlib import Path
 
-# ──────────────────────────────────────────────────────────────
-# Inject project paths so `app.*` imports resolve correctly
-# inside Vercel's serverless sandbox.
-# ──────────────────────────────────────────────────────────────
-_root = Path(__file__).resolve().parent.parent        # repo root
-_backend = _root / "backend"                          # repo/backend/
+# Add project root and backend directory to PYTHONPATH
+root_dir = Path(__file__).resolve().parent.parent
+backend_dir = root_dir / "backend"
 
-for _p in [str(_root), str(_backend)]:
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+for path in [str(root_dir), str(backend_dir)]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
-# Expose the FastAPI ASGI application — Vercel looks for `app`
-from app.main import app  # noqa: E402  (import after sys.path manipulation)
-
-__all__ = ["app"]
+from app.main import app

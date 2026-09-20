@@ -162,67 +162,6 @@ export const App: React.FC = () => {
   }) => {
     if (!mediaInfo) return;
 
-    // STRATEGY 1: Vercel-compatible stream-download
-    // Resolves a direct CDN URL via yt_dlp Python API —
-    // no job/SSE needed. Works on Vercel serverless.
-    if (params.format_type === 'video' || params.format_type === 'audio') {
-      try {
-        const res = await fetch('/api/stream-download', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: mediaInfo.canonical_url,
-            format_type: params.format_type,
-            format_id: params.format_id,
-            audio_id: params.audio_id,
-          }),
-        });
-
-        const text = await res.text();
-        let data: any = {};
-        try { data = JSON.parse(text); } catch { data = {}; }
-
-        if (res.ok && data.direct_url) {
-          const fakeJobId = `stream-${Date.now()}`;
-          const readyJob: DownloadJob = {
-            job_id: fakeJobId,
-            title: mediaInfo.media.title,
-            platform_id: mediaInfo.platform_id,
-            url: mediaInfo.canonical_url,
-            format_type: params.format_type,
-            format_label: params.format_label,
-            status: 'ready',
-            stage_label: 'Download ready!',
-            progress_percent: 100,
-            speed: '--',
-            eta: '--',
-            created_at: Date.now(),
-            thumbnail_url: mediaInfo.media.thumbnail,
-            filename: data.filename,
-            download_url: data.direct_url,
-          };
-          setActiveJobs((prev) => [readyJob, ...prev]);
-
-          // Trigger native browser download via hidden anchor
-          const a = document.createElement('a');
-          a.href = data.direct_url;
-          a.download = data.filename || 'media';
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => { if (document.body.contains(a)) document.body.removeChild(a); }, 300);
-          return;
-        }
-        // If stream-download fails, fall through to job-based path
-      } catch {
-        // Silently fall through to job-based download
-      }
-    }
-
-    // STRATEGY 2: Job-based background download (local server)
-    // Creates a job, SSE streams progress back to UI.
-    // Used for thumbnails, all_in_one bundles, and as local fallback.
     try {
       const res = await fetch('/api/download', {
         method: 'POST',
@@ -274,7 +213,6 @@ export const App: React.FC = () => {
       alert(`Download start error: ${err.message}`);
     }
   };
-
 
   const handleCancelJob = async (jobId: string) => {
     try {
