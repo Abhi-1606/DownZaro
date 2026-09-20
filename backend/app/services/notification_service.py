@@ -5,19 +5,20 @@ from email.mime.multipart import MIMEMultipart
 import logging
 from dotenv import load_dotenv
 
-load_dotenv()
+ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".env")
+load_dotenv(dotenv_path=ENV_PATH, override=True)
 
 logger = logging.getLogger("downzaro.notifications")
 
 
 def get_smtp_config():
     """Reads SMTP settings dynamically from environment or .env file."""
-    load_dotenv()
+    load_dotenv(dotenv_path=ENV_PATH, override=True)
     return {
         "host": os.getenv("SMTP_HOST", "smtp.gmail.com"),
         "port": int(os.getenv("SMTP_PORT", "587")),
         "user": os.getenv("SMTP_USER", "").strip(),
-        "password": os.getenv("SMTP_PASSWORD", "").strip(),
+        "password": os.getenv("SMTP_PASSWORD", "").replace(" ", "").strip(),
         "from_addr": os.getenv("SMTP_FROM", "").strip() or os.getenv("SMTP_USER", "").strip() or "DownZaro Security <security@downzaro.com>",
     }
 
