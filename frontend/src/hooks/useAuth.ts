@@ -200,6 +200,20 @@ export function useAuth() {
     return data;
   };
 
+  // Fetch registered Google/database accounts
+  const getRegisteredGoogleAccounts = async () => {
+    try {
+      const res = await fetch('/api/auth/google/accounts');
+      if (res.ok) {
+        const data = await res.json();
+        return data.accounts || [];
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  };
+
   // Register a new user
   const register = async (params: {
     name: string;
@@ -414,6 +428,7 @@ export function useAuth() {
     getOtpChannels,
     requestOtp,
     verifyOtp,
+    getRegisteredGoogleAccounts,
     loginWithPasskey,
     logout,
   };

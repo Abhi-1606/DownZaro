@@ -68,6 +68,7 @@ def send_otp_email(to_email: str, otp_code: str, purpose: str = "verification") 
 
     # If SMTP credentials configured, attempt live dispatch
     cfg = get_smtp_config()
+    live_sent = False
     if cfg["user"] and cfg["password"]:
         try:
             msg = MIMEMultipart("alternative")
@@ -85,15 +86,27 @@ def send_otp_email(to_email: str, otp_code: str, purpose: str = "verification") 
                 server.login(cfg["user"], cfg["password"])
                 server.sendmail(cfg["from_addr"], [to_email], msg.as_string())
             
-            logger.info(f"📧 [SMTP] OTP email sent successfully to {to_email}")
+            logger.info(f"📧 [SMTP LIVE] OTP email sent successfully to {to_email}")
+            print(f"\n=======================================================\n📧 [SMTP LIVE] OTP email sent to {to_email}\n=======================================================\n", flush=True)
+            live_sent = True
             return True
         except Exception as e:
-            logger.error(f"❌ [SMTP] Failed to send email to {to_email}: {e}")
-            # Fall back to logging
-            pass
+            logger.error(f"❌ [SMTP ERROR] Failed to send email to {to_email}: {e}")
+            print(f"\n❌ [SMTP ERROR] Could not connect or send via SMTP: {e}\n", flush=True)
 
     # Server log for development / audit
-    logger.info(f"✉️ [SECURE OTP DISPATCH] Delivered to mailbox {to_email}: Code [{otp_code}] (Purpose: {purpose})")
+    banner = f"""
+╔════════════════════════════════════════════════════════════════════╗
+║                   ⚡ DOWNZARO OTP VERIFICATION CODE                ║
+╠════════════════════════════════════════════════════════════════════╣
+║  • Code        : {otp_code}                                            ║
+║  • Recipient   : {to_email:<50}║
+║  • Purpose     : {purpose:<50}║
+║  • Live SMTP   : {'Active (Delivered to Inbox)' if live_sent else 'Not Configured (Using Local Dev Code)':<50}║
+╚════════════════════════════════════════════════════════════════════╝
+"""
+    print(banner, flush=True)
+    logger.info(f"✉️ [OTP DISPATCH] Delivered to {to_email}: Code [{otp_code}] (Purpose: {purpose})")
     return True
 
 
@@ -103,5 +116,15 @@ def send_otp_sms(to_phone: str, otp_code: str, purpose: str = "verification") ->
     Logs securely on server.
     """
     clean_phone = to_phone.strip()
+    banner = f"""
+╔════════════════════════════════════════════════════════════════════╗
+║                📱 DOWNZARO SMS OTP VERIFICATION CODE               ║
+╠════════════════════════════════════════════════════════════════════╣
+║  • Code        : {otp_code}                                            ║
+║  • Mobile No.  : {clean_phone:<50}║
+║  • Purpose     : {purpose:<50}║
+╚════════════════════════════════════════════════════════════════════╝
+"""
+    print(banner, flush=True)
     logger.info(f"📱 [SECURE SMS DISPATCH] Delivered to {clean_phone}: Code [{otp_code}] (Purpose: {purpose})")
     return True

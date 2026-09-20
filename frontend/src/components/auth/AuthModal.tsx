@@ -54,9 +54,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
 
-  // Google Account Chooser State
+  // Google & Registered Accounts State
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
+  const [dbAccounts, setDbAccounts] = useState<SavedAccount[]>([]);
+  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
 
   // OTP Channel State for Sign In
   const [otpTarget, setOtpTarget] = useState('');
@@ -73,6 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   } | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [devOtpCode, setDevOtpCode] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   // Forgot Password State
@@ -90,6 +93,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   } | null>(null);
   const [forgotOtpSent, setForgotOtpSent] = useState(false);
   const [forgotOtpCode, setForgotOtpCode] = useState('');
+  const [forgotDevOtpCode, setForgotDevOtpCode] = useState<string | null>(null);
   const [forgotNewPassword, setForgotNewPassword] = useState('');
 
   // Quick Device Email State
@@ -101,6 +105,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Merge local device accounts with registered DB accounts
+  const allGoogleAccounts = React.useMemo(() => {
+    const map = new Map<string, SavedAccount>();
+    // From DB
+    dbAccounts.forEach((acc) => {
+      if (acc.email) {
+        map.set(acc.email.toLowerCase(), {
+          email: acc.email,
+          name: acc.name || 'User',
+          username: acc.username || acc.email.split('@')[0],
+          lastUsed: Date.now(),
+        });
+      }
+    });
+    // From local saved accounts
+    savedAccounts.forEach((acc) => {
+      if (acc.email) {
+        map.set(acc.email.toLowerCase(), acc);
+      }
+    });
+    return Array.from(map.values());
+  }, [dbAccounts, savedAccounts]);
+
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
@@ -108,11 +135,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       resetMessages();
       setShowGoogleChooser(false);
       setShowDevicePicker(false);
+      setShowCustomGoogleInput(false);
       setIsSubmitting(false);
       setOtpSent(false);
       setForgotOtpSent(false);
+      setDevOtpCode(null);
+      setForgotDevOtpCode(null);
       setDiscoveredChannels(null);
       setForgotDiscovered(null);
+
+      // Load all registered user accounts from backend
+      auth.getRegisteredGoogleAccounts().then((accounts: any[]) => {
+        if (accounts && Array.isArray(accounts)) {
+          setDbAccounts(accounts);
+        }
+      }).catch(() => {});
     }
   }, [isOpen, initialMode]);
 
@@ -318,6 +355,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const res = await auth.requestOtp(finalDest, 'login', selectedOtpChannel);
       setOtpSent(true);
       setResendCooldown(30);
+      if (res.dev_code) {
+        setDevOtpCode(res.dev_code);
+        setOtpCode(res.dev_code); // auto-fill for frictionless local development
+      } else {
+        setDevOtpCode(null);
+      }
       setSuccess(
         res.message ||
           `6-digit verification OTP dispatched to your ${selectedOtpChannel === 'email' ? 'Gmail / Email' : 'Mobile Number'}. Please check your inbox or messages.`
@@ -396,6 +439,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const res = await auth.requestOtp(finalDest, 'reset', forgotChannel);
       setForgotOtpSent(true);
       setResendCooldown(30);
+      if (res.dev_code) {
+        setForgotDevOtpCode(res.dev_code);
+        setForgotOtpCode(res.dev_code); // auto-fill for frictionless local development
+      } else {
+        setForgotDevOtpCode(null);
+      }
       setSuccess(
         res.message ||
           `6-digit reset code sent to your ${forgotChannel === 'email' ? 'Gmail / Email' : 'Mobile Number'}. Please check your inbox or messages.`
@@ -543,27 +592,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* Saved Google accounts detected */}
-            {savedAccounts.filter((a) => a.email.endsWith('@gmail.com') || a.email.includes('@')).length > 0 && (
+            {/* All Google Accounts Detected (Merged from DB & Browser) */}
+            {allGoogleAccounts.length > 0 && (
               <div className="space-y-2">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider font-manrope">
-                  Choose an account:
-                </span>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                  {savedAccounts.map((account) => (
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider font-manrope">
+                    Choose an account ({allGoogleAccounts.length} available):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomGoogleInput(!showCustomGoogleInput)}
+                    className="text-[11px] text-[#ef233c] hover:underline cursor-pointer font-medium"
+                  >
+                    {showCustomGoogleInput ? 'Hide manual input' : '+ Use another Gmail'}
+                  </button>
+                </div>
+                <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                  {allGoogleAccounts.map((account) => (
                     <button
                       key={account.email}
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => handleGoogleSubmit(account.email, account.name)}
-                      className="w-full p-2.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-white/5 hover:border-white/20 flex items-center justify-between text-left transition-all cursor-pointer group"
+                      className="w-full p-2.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-white/5 hover:border-[#ef233c]/50 flex items-center justify-between text-left transition-all cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-red-500/20 text-[#ef233c] font-bold text-xs flex items-center justify-center shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500/30 to-amber-500/20 text-[#ef233c] border border-red-500/30 font-bold text-xs flex items-center justify-center shrink-0">
                           {account.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="truncate">
-                          <div className="text-xs font-semibold text-white truncate">{account.name}</div>
+                          <div className="text-xs font-semibold text-white truncate group-hover:text-red-400 transition-colors">
+                            {account.name}
+                          </div>
                           <div className="text-[11px] text-zinc-400 font-mono truncate">{account.email}</div>
                         </div>
                       </div>
@@ -575,54 +635,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
 
             {/* Use Another Google Account Form */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleGoogleSubmit(customGoogleEmail, customGoogleName);
-              }}
-              className="space-y-2.5 pt-2 border-t border-white/10"
-            >
-              <label className="block text-xs font-medium text-zinc-300">
-                {mode === 'signup' ? 'Connect your Gmail Address:' : 'Sign in with your Gmail Address:'}
-              </label>
-              {mode === 'signup' && (
-                <input
-                  type="text"
-                  placeholder="Your Name (Optional)"
-                  value={customGoogleName}
-                  onChange={(e) => setCustomGoogleName(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white placeholder:text-zinc-600 text-xs focus:border-[#ef233c] focus:outline-none focus:ring-1 focus:ring-[#ef233c]/50 transition-colors"
-                />
-              )}
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. yourname@gmail.com"
-                  value={customGoogleEmail}
-                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white placeholder:text-zinc-600 text-sm focus:border-[#ef233c] focus:outline-none focus:ring-1 focus:ring-[#ef233c]/50 transition-colors font-mono"
-                />
-              </div>
+            {(showCustomGoogleInput || allGoogleAccounts.length === 0) && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleGoogleSubmit(customGoogleEmail, customGoogleName);
+                }}
+                className="space-y-2.5 pt-2 border-t border-white/10"
+              >
+                <label className="block text-xs font-medium text-zinc-300">
+                  {mode === 'signup' ? 'Connect any Gmail Address:' : 'Sign in with any Gmail Address:'}
+                </label>
+                {mode === 'signup' && (
+                  <input
+                    type="text"
+                    placeholder="Your Name (Optional)"
+                    value={customGoogleName}
+                    onChange={(e) => setCustomGoogleName(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white placeholder:text-zinc-600 text-xs focus:border-[#ef233c] focus:outline-none focus:ring-1 focus:ring-[#ef233c]/50 transition-colors"
+                  />
+                )}
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. yourname@gmail.com"
+                    value={customGoogleEmail}
+                    onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white placeholder:text-zinc-600 text-sm focus:border-[#ef233c] focus:outline-none focus:ring-1 focus:ring-[#ef233c]/50 transition-colors font-mono"
+                  />
+                </div>
 
-              <div className="flex gap-2 pt-1">
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (allGoogleAccounts.length > 0) {
+                        setShowCustomGoogleInput(false);
+                      } else {
+                        setShowGoogleChooser(false);
+                      }
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-zinc-300 font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#ef233c] to-[#d90429] text-white text-xs font-bold font-manrope shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Connecting...' : mode === 'signup' ? 'Create with Google' : 'Sign In with Google'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {allGoogleAccounts.length > 0 && !showCustomGoogleInput && (
+              <div className="pt-2 text-center">
                 <button
                   type="button"
                   onClick={() => setShowGoogleChooser(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-zinc-300 font-semibold cursor-pointer"
+                  className="text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
                 >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#ef233c] to-[#d90429] text-white text-xs font-bold font-manrope shadow-lg transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Connecting...' : mode === 'signup' ? 'Create with Google' : 'Sign In with Google'}
+                  ← Back to other login methods
                 </button>
               </div>
-            </form>
+            )}
           </div>
         ) : showDevicePicker ? (
           /* =========================================================================
@@ -880,8 +960,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
             ) : (
-              /* Step 3: Enter OTP & New Password (NO dev code on screen) */
+              /* Step 3: Enter OTP & New Password */
               <form onSubmit={handleForgotResetPassword} noValidate className="space-y-3">
+                {forgotDevOtpCode && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-1.5 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-amber-400">
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                        <span>OTP Code: <span className="font-mono text-sm tracking-widest text-white bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/40">{forgotDevOtpCode}</span></span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setForgotOtpCode(forgotDevOtpCode)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500 text-black font-bold text-[11px] hover:bg-amber-400 transition-colors cursor-pointer"
+                      >
+                        Auto-Fill
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-amber-300/80">
+                      ⚡ Local Mode: To deliver real OTPs to your Gmail inbox, add <span className="font-mono bg-black/40 px-1 py-0.5 rounded">SMTP_USER</span> and App Password in <span className="font-mono bg-black/40 px-1 py-0.5 rounded">backend/.env</span>.
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-medium text-zinc-300">
@@ -1353,8 +1454,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </div>
                       </div>
                     ) : (
-                      /* Step 3: Enter 6-digit OTP (NO dev code on screen) */
+                      /* Step 3: Enter 6-digit OTP */
                       <form onSubmit={handleVerifyOtp} noValidate className="space-y-3">
+                        {devOtpCode && (
+                          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-1.5 animate-in fade-in duration-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 font-bold text-amber-400">
+                                <Sparkles className="w-4 h-4 text-amber-400" />
+                                <span>OTP Code: <span className="font-mono text-sm tracking-widest text-white bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/40">{devOtpCode}</span></span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setOtpCode(devOtpCode)}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500 text-black font-bold text-[11px] hover:bg-amber-400 transition-colors cursor-pointer"
+                              >
+                                Auto-Fill
+                              </button>
+                            </div>
+                            <div className="text-[10px] text-amber-300/80">
+                              ⚡ Local Mode: To deliver real OTPs to your Gmail inbox, add <span className="font-mono bg-black/40 px-1 py-0.5 rounded">SMTP_USER</span> and App Password in <span className="font-mono bg-black/40 px-1 py-0.5 rounded">backend/.env</span>.
+                            </div>
+                          </div>
+                        )}
+
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
                             <label className="text-xs font-medium text-zinc-300">

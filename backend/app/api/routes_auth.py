@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 import logging
-from app.services import auth_service
+from app.services import auth_service, notification_service
 
 logger = logging.getLogger("downzaro.api.auth")
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
@@ -155,6 +155,22 @@ async def login(payload: LoginRequest):
     }
 
 
+@router.get("/google/accounts")
+async def get_google_accounts():
+    """Returns list of registered accounts with Google/Gmail for quick switching."""
+    try:
+        query = '''
+            SELECT id, name, username, email 
+            FROM "Credentials-DownZaro" 
+            ORDER BY id DESC LIMIT 10
+        '''
+        users = auth_service.execute_query(query, fetch_all=True) or []
+        return {"success": True, "accounts": users}
+    except Exception as e:
+        logger.error(f"Error fetching accounts: {e}")
+        return {"success": True, "accounts": []}
+
+
 @router.post("/google")
 async def google_auth(payload: GoogleAuthRequest):
     """Connects to user's Google account to Sign Up or Sign In with strict existence checks."""
@@ -233,13 +249,20 @@ async def get_otp_channels(payload: OtpChannelsRequestModel):
 @router.post("/otp/request")
 async def request_otp(payload: OtpRequestModel):
     """Generates and dispatches a 6-digit OTP code to the requested email (Gmail) or phone."""
-    auth_service.create_otp(payload.destination, payload.purpose, payload.channel or "email")
+    code = auth_service.create_otp(payload.destination, payload.purpose, payload.channel or "email")
     target_label = "Gmail / Email" if (payload.channel == "email" or "@" in payload.destination) else "Mobile Number"
+    
+    # Check if live SMTP is configured
+    smtp_cfg = notification_service.get_smtp_config()
+    smtp_live = bool(smtp_cfg.get("user") and smtp_cfg.get("password"))
+
     return {
         "success": True,
         "message": f"6-digit verification OTP dispatched to your {target_label} ({payload.destination}). Please check your inbox or messages.",
         "channel": payload.channel or "email",
-        "destination": payload.destination
+        "destination": payload.destination,
+        "smtp_live": smtp_live,
+        "dev_code": code if not smtp_live else None
     }
 
 
