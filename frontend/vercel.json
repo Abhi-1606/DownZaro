@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://downzaro.onrender.com/api/:path*"
+    }
+  ]
+}
