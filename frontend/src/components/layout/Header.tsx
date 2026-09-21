@@ -118,11 +118,10 @@ export const Header: React.FC<HeaderProps> = ({
                 setActiveView('home');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`text-sm font-medium transition-colors ${
-                activeView === 'home'
+              className={`text-sm font-medium transition-colors ${activeView === 'home'
                   ? 'text-white font-semibold'
                   : 'text-zinc-400 hover:text-white'
-              }`}
+                }`}
             >
               Product
             </button>
@@ -146,11 +145,10 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => setActiveView('history')}
-              className={`text-sm font-medium flex items-center gap-1.5 transition-colors ${
-                activeView === 'history'
+              className={`text-sm font-medium flex items-center gap-1.5 transition-colors ${activeView === 'history'
                   ? 'text-[#ef233c] font-semibold'
                   : 'text-zinc-400 hover:text-white'
-              }`}
+                }`}
             >
               <HistoryIcon className="w-3.5 h-3.5" />
               History
