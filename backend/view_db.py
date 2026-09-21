@@ -49,5 +49,4 @@ def print_table():
 
 
 if __name__ == "__main__":
-    print_table()
-    
+    print_table()  
