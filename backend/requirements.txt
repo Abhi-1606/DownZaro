@@ -12,3 +12,6 @@ imageio-ffmpeg>=0.5.1
 idna>=3.7
 yt-dlp-get-pot>=0.3.0
 bgutil-ytdlp-pot-provider>=2.0.0
+psycopg2-binary>=2.9.9
+python-dotenv>=1.0.1
+email-validator>=2.2.0
