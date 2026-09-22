@@ -10,6 +10,7 @@ for path in [str(root_dir), str(backend_dir)]:
         sys.path.insert(0, path)
 
 try:
+    # pyrefly: ignore [missing-import]
     from app.main import app
 except ImportError:
     from backend.app.main import app
