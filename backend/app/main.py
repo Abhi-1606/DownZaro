@@ -119,10 +119,33 @@ app.include_router(download_router)
 app.include_router(progress_router)
 app.include_router(file_router)
 
-@app.get("/")
-async def root():
-    return {
-        "app": "DownZaro",
-        "tagline": "Link it • Download it • Keep it",
-        "status": "online"
-    }
+# Mount static frontend build if present (Unified Full-Stack Mode)
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+if os.path.exists(dist_dir):
+    assets_dir = os.path.join(dist_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api/"):
+            return JSONResponse(status_code=404, content={"message": "API endpoint not found"})
+        candidate = os.path.join(dist_dir, full_path)
+        if os.path.isfile(candidate):
+            return FileResponse(candidate)
+        index_file = os.path.join(dist_dir, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
+        return JSONResponse(status_code=404, content={"message": "Frontend build not found"})
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "app": "DownZaro",
+            "tagline": "Link it • Download it • Keep it",
+            "status": "online"
+        }
