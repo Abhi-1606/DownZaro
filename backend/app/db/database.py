@@ -14,15 +14,8 @@ PG_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
 PG_DATABASE = os.getenv("DB_NAME", "DownZaro")
 
 # SQLite fallback path
-if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-    SQLITE_PATH = "/tmp/downzaro.db"
-else:
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data")
-    try:
-        os.makedirs(data_dir, exist_ok=True)
-        SQLITE_PATH = os.path.join(data_dir, "downzaro.db")
-    except OSError:
-        SQLITE_PATH = "/tmp/downzaro.db"
+SQLITE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "downzaro.db")
+os.makedirs(os.path.dirname(SQLITE_PATH), exist_ok=True)
 
 
 def get_pg_connection():
@@ -43,12 +36,6 @@ def get_pg_connection():
 
 
 def get_sqlite_connection():
-    db_dir = os.path.dirname(SQLITE_PATH)
-    if db_dir:
-        try:
-            os.makedirs(db_dir, exist_ok=True)
-        except OSError:
-            pass
     conn = sqlite3.connect(SQLITE_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
