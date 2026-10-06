@@ -140,12 +140,20 @@ class DownloadManager:
         proc = job.get("proc")
         if proc:
             try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                if hasattr(os, "killpg") and hasattr(os, "getpgid"):
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                else:
+                    proc.kill()
             except Exception:
                 try:
                     proc.kill()
                 except Exception:
                     pass
+
+        # Clean up active client job reference
+        client_ip = job.get("client_ip")
+        if client_ip and job_id in CLIENT_ACTIVE_JOBS.get(client_ip, set()):
+            CLIENT_ACTIVE_JOBS[client_ip].discard(job_id)
 
         job_dir = job.get("job_dir")
         if job_dir and os.path.exists(job_dir):
@@ -193,6 +201,11 @@ class DownloadManager:
                     job["error_message"] = clean_err
                     job["stage_label"] = "Download failed"
                     await self.broadcast_progress(job_id)
+            finally:
+                # Remove from active tracking set on completion
+                client_ip = job.get("client_ip")
+                if client_ip and job_id in CLIENT_ACTIVE_JOBS.get(client_ip, set()):
+                    CLIENT_ACTIVE_JOBS[client_ip].discard(job_id)
 
     async def _download_video(self, job: Dict[str, Any]):
         job_dir = job["job_dir"]
@@ -346,14 +359,29 @@ class DownloadManager:
         custom_env["REQUESTS_CA_BUNDLE"] = ca_path
         custom_env["CURL_CA_BUNDLE"] = ca_path
 
+        preexec = os.setsid if hasattr(os, "setsid") else None
         proc = await asyncio.create_subprocess_exec(
             *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=custom_env,
-            preexec_fn=os.setsid
+            preexec_fn=preexec
         )
         job["proc"] = proc
+
+        # Concurrently read stderr to prevent buffer pipe deadlock
+        stderr_chunks = []
+        async def _read_stderr():
+            try:
+                while True:
+                    err_line = await proc.stderr.readline()
+                    if not err_line:
+                        break
+                    stderr_chunks.append(err_line)
+            except Exception:
+                pass
+
+        stderr_task = asyncio.create_task(_read_stderr())
 
         last_broadcast = 0.0
         while True:
@@ -382,12 +410,34 @@ class DownloadManager:
                 job["stage_label"] = "Converting audio format..."
                 await self.broadcast_progress(job["job_id"])
 
-        stderr_output = await proc.stderr.read()
+        await stderr_task
         await proc.wait()
 
         if proc.returncode != 0 and job["status"] != "cancelled":
-            err_text = stderr_output.decode("utf-8", errors="ignore")
+            err_text = b"".join(stderr_chunks).decode("utf-8", errors="ignore").strip()
             logger.error(f"Download subprocess exited with {proc.returncode}: {err_text}")
+            
+            # Map specific extraction errors
+            lower_err = err_text.lower()
+            if "bot" in lower_err or "captcha" in lower_err:
+                raise DownZaroException(
+                    status_code=429,
+                    code="BOT_CHALLENGE",
+                    message="The platform is rate-limiting downloads. Please retry in a few moments."
+                )
+            elif "private" in lower_err or "login" in lower_err or "sign in" in lower_err:
+                raise DownZaroException(
+                    status_code=403,
+                    code="LOGIN_REQUIRED",
+                    message="This media requires login or account verification."
+                )
+            elif "drm" in lower_err:
+                raise DownZaroException(
+                    status_code=403,
+                    code="DRM_PROTECTED",
+                    message="This content is DRM-protected and cannot be downloaded."
+                )
+
             raise DownZaroException(
                 status_code=502,
                 code="DOWNLOAD_SUBPROCESS_FAILED",
