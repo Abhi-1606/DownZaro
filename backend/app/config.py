@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     RATE_LIMIT_STREAM_PER_MINUTE: int = 120
 
     COOKIES_FILE_PATH: str = ""
+    COOKIES_CONTENT: str = ""
+    YOUTUBE_COOKIES: str = ""
+    PROXY_URL: str = ""
     YTDLP_AUTO_UPDATE: bool = False
 
     @property
@@ -35,3 +38,14 @@ settings = Settings()
 
 # Ensure temp directory exists
 os.makedirs(settings.TEMP_DIR, exist_ok=True)
+
+# Auto-initialize cookies from environment variable if provided
+cookie_raw = settings.COOKIES_CONTENT or settings.YOUTUBE_COOKIES
+if cookie_raw and not settings.COOKIES_FILE_PATH:
+    try:
+        cookie_path = os.path.join(settings.TEMP_DIR, "youtube_cookies.txt")
+        with open(cookie_path, "w", encoding="utf-8") as f:
+            f.write(cookie_raw)
+        settings.COOKIES_FILE_PATH = cookie_path
+    except Exception as e:
+        pass

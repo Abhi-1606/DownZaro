@@ -215,12 +215,15 @@ class DownloadManager:
             "--newline",
             "--no-check-certificates",
             "--geo-bypass",
-            "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "--extractor-args", "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416;youtube:player_client=web,mweb,ios",
+            "--user-agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+            "--extractor-args", "youtube:player_client=android,ios,mweb",
             "--output", output_template,
             "--no-warnings",
             "--socket-timeout", "30",
         ]
+
+        if settings.PROXY_URL:
+            args.extend(["--proxy", settings.PROXY_URL])
 
         node_bin = shutil.which("node")
         if node_bin:
@@ -248,12 +251,15 @@ class DownloadManager:
             "--newline",
             "--no-check-certificates",
             "--geo-bypass",
-            "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "--extractor-args", "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416;youtube:player_client=web,mweb,ios",
+            "--user-agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+            "--extractor-args", "youtube:player_client=android,ios,mweb",
             "--output", output_template,
             "--no-warnings",
             "--socket-timeout", "30",
         ]
+
+        if settings.PROXY_URL:
+            args.extend(["--proxy", settings.PROXY_URL])
 
         if "m4a" in audio_id:
             args.extend(["--audio-format", "m4a"])

@@ -44,24 +44,29 @@ class YtDlpService:
             logger.info(f"Returning cached metadata for {canonical_url}")
             return cached
 
-        # Multi-strategy client profiles to bypass platform rate-limits, anti-bot challenges, and client gating
+        # Multi-strategy client profiles to bypass platform rate-limits and anti-bot challenges
         strategies = [
-            # Strategy 1: PO-Token Powered Web + Mobile clients (Solves bot challenge)
+            # Strategy 1: Mobile & Android client (Most resilient on cloud/datacenter IPs)
             [
-                "--extractor-args", "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416;youtube:player_client=web,mweb,ios",
-                "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "--extractor-args", "youtube:player_client=android,ios,mweb;youtube:player_skip=configs,webpage",
+                "--user-agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
             ],
-            # Strategy 2: Web PO-Token Client
+            # Strategy 2: iOS Client
             [
-                "--extractor-args", "youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416;youtube:player_client=web",
-                "--user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            ],
-            # Strategy 3: Mobile Native App Clients
-            [
-                "--extractor-args", "youtube:player_client=android,ios,tv",
+                "--extractor-args", "youtube:player_client=ios,web",
                 "--user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
             ],
-            # Strategy 4: Clean generic fallback
+            # Strategy 3: TV / Embedded Client (Often skips web bot challenges)
+            [
+                "--extractor-args", "youtube:player_client=tv_embedded,web_creator,mweb",
+                "--user-agent", "Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/4.0 Chrome/76.0.3809.146 TV Safari/537.36",
+            ],
+            # Strategy 4: Clean desktop fallback
+            [
+                "--extractor-args", "youtube:player_client=web",
+                "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            ],
+            # Strategy 5: Generic fallback
             [
                 "--user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             ]
@@ -85,6 +90,9 @@ class YtDlpService:
                 "--add-header", "Accept-Language:en-US,en;q=0.9",
                 "--socket-timeout", "20",
             ]
+
+            if settings.PROXY_URL:
+                args.extend(["--proxy", settings.PROXY_URL])
 
             if node_bin:
                 args.extend(["--js-runtimes", f"node:{node_bin}"])
