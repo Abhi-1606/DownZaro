@@ -42,3 +42,5 @@ htmlcov/
 *.sqlite3
 backend/data/
 data/
+.vercel
+.env*
