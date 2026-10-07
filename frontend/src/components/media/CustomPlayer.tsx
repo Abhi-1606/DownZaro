@@ -82,9 +82,16 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
       });
 
       qualities.forEach((q) => {
+        let label = q.quality;
+        if (!label.includes('4K') && !label.includes('2K') && !label.includes('HD')) {
+          if (q.height >= 2160) label = `${q.quality} (4K UHD)`;
+          else if (q.height >= 1440) label = `${q.quality} (2K QHD)`;
+          else if (q.height >= 1080) label = `${q.quality} (Full HD)`;
+          else if (q.height >= 720) label = `${q.quality} (HD)`;
+        }
         options.push({
           id: q.quality,
-          label: `${q.quality}${q.height >= 720 ? (q.height >= 1440 ? ' 4K' : ' HD') : ''}`,
+          label: label,
           height: q.height,
           streamUrl: q.stream_url,
           hasAudio: q.has_audio,
@@ -102,9 +109,16 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
       videoFormats.forEach((f) => {
         if (!seen.has(f.resolution) && f.height >= 144) {
           seen.add(f.resolution);
+          let label = f.resolution;
+          if (!label.includes('4K') && !label.includes('2K') && !label.includes('HD')) {
+            if (f.height >= 2160) label = `${f.resolution} (4K UHD)`;
+            else if (f.height >= 1440) label = `${f.resolution} (2K QHD)`;
+            else if (f.height >= 1080) label = `${f.resolution} (Full HD)`;
+            else if (f.height >= 720) label = `${f.resolution} (HD)`;
+          }
           options.push({
             id: f.resolution,
-            label: `${f.resolution}${f.height >= 720 ? (f.height >= 1440 ? ' 4K' : ' HD') : ''}`,
+            label: label,
             height: f.height,
             streamUrl: streamUrl || undefined,
           });
@@ -114,7 +128,9 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
       // Default fallback qualities
       options.push(
         { id: 'Auto', label: 'Auto (Best)', streamUrl: streamUrl || undefined },
-        { id: '1080p', label: '1080p HD', height: 1080, streamUrl: streamUrl || undefined },
+        { id: '4K', label: '4K UHD (2160p)', height: 2160, streamUrl: streamUrl || undefined },
+        { id: '2K', label: '2K QHD (1440p)', height: 1440, streamUrl: streamUrl || undefined },
+        { id: '1080p', label: '1080p Full HD', height: 1080, streamUrl: streamUrl || undefined },
         { id: '720p', label: '720p HD', height: 720, streamUrl: streamUrl || undefined },
         { id: '480p', label: '480p', height: 480, streamUrl: streamUrl || undefined },
         { id: '360p', label: '360p', height: 360, streamUrl: streamUrl || undefined }

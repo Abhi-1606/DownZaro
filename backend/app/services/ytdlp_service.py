@@ -46,33 +46,33 @@ class YtDlpService:
 
         # Multi-strategy client profiles to bypass platform rate-limits and anti-bot challenges
         strategies = [
-            # Strategy 1: Mobile & Android client (Most resilient on cloud/datacenter IPs)
+            # Strategy 1: Standard comprehensive extraction (Supports full HD, 4K, 1080p, 720p streams)
             [
-                "--extractor-args", "youtube:player_client=android,ios,mweb;youtube:player_skip=configs,webpage",
-                "--user-agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             ],
-            # Strategy 2: iOS Client
+            # Strategy 2: TV & Web Creator client profile (Bypasses challenges on cloud/datacenter IPs while retaining full HD/4K)
+            [
+                "--extractor-args", "youtube:player_client=tv,web_creator,mweb",
+                "--user-agent", "Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/4.0 Chrome/76.0.3809.146 TV Safari/537.36",
+            ],
+            # Strategy 3: Desktop Web client
+            [
+                "--extractor-args", "youtube:player_client=web",
+                "--user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            ],
+            # Strategy 4: iOS & Web client
             [
                 "--extractor-args", "youtube:player_client=ios,web",
                 "--user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
             ],
-            # Strategy 3: TV / Embedded Client (Often skips web bot challenges)
+            # Strategy 5: Generic clean fallback
             [
-                "--extractor-args", "youtube:player_client=tv_embedded,web_creator,mweb",
-                "--user-agent", "Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/4.0 Chrome/76.0.3809.146 TV Safari/537.36",
-            ],
-            # Strategy 4: Clean desktop fallback
-            [
-                "--extractor-args", "youtube:player_client=web",
                 "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            ],
-            # Strategy 5: Generic fallback
-            [
-                "--user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             ]
         ]
 
         last_error_msg = ""
+        fallback_data = None
         node_bin = shutil.which("node")
         custom_env = os.environ.copy()
         custom_env["PATH"] = f"{self.ffmpeg_dir}:{custom_env.get('PATH', '')}"
@@ -121,6 +121,9 @@ class YtDlpService:
                     except Exception:
                         pass
                     if idx == len(strategies) - 1:
+                        if fallback_data:
+                            self._set_cache(canonical_url, fallback_data)
+                            return fallback_data
                         raise DownZaroException(
                             status_code=504,
                             code="EXTRACTION_TIMEOUT",
@@ -142,8 +145,16 @@ class YtDlpService:
                                 message="This video is an upcoming premiere and hasn't started yet.",
                                 retryable=False
                             )
-                        self._set_cache(canonical_url, data)
-                        return data
+                        
+                        raw_fmts = data.get("formats") or []
+                        # If we have rich formats (HD/multiple options), return immediately; otherwise try subsequent strategies
+                        has_hd_or_multi = any((f.get("height") or 0) >= 720 for f in raw_fmts) or len(raw_fmts) > 3
+                        if has_hd_or_multi or idx == len(strategies) - 1:
+                            self._set_cache(canonical_url, data)
+                            return data
+                        else:
+                            fallback_data = data
+                            logger.info(f"Extraction attempt {idx + 1} yielded limited formats ({len(raw_fmts)}). Trying next strategy...")
 
                 err_msg = stderr.decode("utf-8", errors="ignore").strip()
                 last_error_msg = err_msg

@@ -7,7 +7,10 @@ import shutil
 import asyncio
 import logging
 import zipfile
-import certifi
+try:
+    import certifi  # type: ignore
+except ImportError:
+    certifi = None
 from typing import Dict, Any, Optional, List
 from collections import defaultdict
 
@@ -66,7 +69,7 @@ class DownloadManager:
         job_dir = os.path.join(self.temp_dir, job_id)
         os.makedirs(job_dir, exist_ok=True)
 
-        job = {
+        job: Dict[str, Any] = {
             "job_id": job_id,
             "client_ip": client_ip,
             "url": canonical_url,
@@ -228,8 +231,12 @@ class DownloadManager:
             "--newline",
             "--no-check-certificates",
             "--geo-bypass",
-            "--user-agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-            "--extractor-args", "youtube:player_client=android,ios,mweb",
+            "--concurrent-fragments", "5",
+            "--throttled-rate", "100K",
+            "--buffer-size", "64K",
+            "--retries", "5",
+            "--fragment-retries", "5",
+            "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "--output", output_template,
             "--no-warnings",
             "--socket-timeout", "30",
@@ -238,7 +245,7 @@ class DownloadManager:
         if settings.PROXY_URL:
             args.extend(["--proxy", settings.PROXY_URL])
 
-        node_bin = shutil.which("node")
+        node_bin = shutil.which("node") or ("/usr/local/bin/node" if os.path.exists("/usr/local/bin/node") else None) or ("/opt/homebrew/bin/node" if os.path.exists("/opt/homebrew/bin/node") else None)
         if node_bin:
             args.extend(["--js-runtimes", f"node:{node_bin}"])
 
@@ -264,8 +271,12 @@ class DownloadManager:
             "--newline",
             "--no-check-certificates",
             "--geo-bypass",
-            "--user-agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-            "--extractor-args", "youtube:player_client=android,ios,mweb",
+            "--concurrent-fragments", "5",
+            "--throttled-rate", "100K",
+            "--buffer-size", "64K",
+            "--retries", "5",
+            "--fragment-retries", "5",
+            "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "--output", output_template,
             "--no-warnings",
             "--socket-timeout", "30",
@@ -273,6 +284,10 @@ class DownloadManager:
 
         if settings.PROXY_URL:
             args.extend(["--proxy", settings.PROXY_URL])
+
+        node_bin = shutil.which("node") or ("/usr/local/bin/node" if os.path.exists("/usr/local/bin/node") else None) or ("/opt/homebrew/bin/node" if os.path.exists("/opt/homebrew/bin/node") else None)
+        if node_bin:
+            args.extend(["--js-runtimes", f"node:{node_bin}"])
 
         if "m4a" in audio_id:
             args.extend(["--audio-format", "m4a"])
@@ -354,10 +369,15 @@ class DownloadManager:
         custom_env["PATH"] = f"{self.ffmpeg_dir}:{custom_env.get('PATH', '')}"
         
         # Point OpenSSL / requests to certifi CA bundle on macOS
-        ca_path = certifi.where()
-        custom_env["SSL_CERT_FILE"] = ca_path
-        custom_env["REQUESTS_CA_BUNDLE"] = ca_path
-        custom_env["CURL_CA_BUNDLE"] = ca_path
+        if certifi:
+            try:
+                ca_path = certifi.where()
+                if ca_path and os.path.exists(ca_path):
+                    custom_env["SSL_CERT_FILE"] = ca_path
+                    custom_env["REQUESTS_CA_BUNDLE"] = ca_path
+                    custom_env["CURL_CA_BUNDLE"] = ca_path
+            except Exception:
+                pass
 
         preexec = os.setsid if hasattr(os, "setsid") else None
         proc = await asyncio.create_subprocess_exec(
@@ -372,6 +392,8 @@ class DownloadManager:
         # Concurrently read stderr to prevent buffer pipe deadlock
         stderr_chunks = []
         async def _read_stderr():
+            if not proc.stderr:
+                return
             try:
                 while True:
                     err_line = await proc.stderr.readline()
@@ -384,31 +406,35 @@ class DownloadManager:
         stderr_task = asyncio.create_task(_read_stderr())
 
         last_broadcast = 0.0
-        while True:
-            line = await proc.stdout.readline()
-            if not line:
-                break
-            line_str = line.decode("utf-8", errors="ignore").strip()
+        if proc.stdout:
+            while True:
+                try:
+                    line = await proc.stdout.readline()
+                except Exception:
+                    break
+                if not line:
+                    break
+                line_str = line.decode("utf-8", errors="ignore").strip()
 
-            match = PROGRESS_REGEX.search(line_str)
-            if match:
-                job["status"] = "downloading_video" if job["format_type"] == "video" else "downloading_audio"
-                job["progress_percent"] = float(match.group("percent"))
-                job["speed_str"] = match.group("speed").strip()
-                job["eta_str"] = match.group("eta").strip()
-                job["stage_label"] = f"Downloading ({job['progress_percent']}%)"
+                match = PROGRESS_REGEX.search(line_str)
+                if match:
+                    job["status"] = "downloading_video" if job["format_type"] == "video" else "downloading_audio"
+                    job["progress_percent"] = float(match.group("percent"))
+                    job["speed_str"] = match.group("speed").strip()
+                    job["eta_str"] = match.group("eta").strip()
+                    job["stage_label"] = f"Downloading ({job['progress_percent']}%)"
 
-                now = time.time()
-                if now - last_broadcast > 0.25:
-                    last_broadcast = now
+                    now = time.time()
+                    if now - last_broadcast > 0.25:
+                        last_broadcast = now
+                        await self.broadcast_progress(job["job_id"])
+                elif "[Merger]" in line_str or "Merging formats" in line_str:
+                    job["status"] = "merging"
+                    job["stage_label"] = "Merging audio and video (ffmpeg)..."
                     await self.broadcast_progress(job["job_id"])
-            elif "[Merger]" in line_str or "Merging formats" in line_str:
-                job["status"] = "merging"
-                job["stage_label"] = "Merging audio and video (ffmpeg)..."
-                await self.broadcast_progress(job["job_id"])
-            elif "[ExtractAudio]" in line_str or "Destination:" in line_str:
-                job["stage_label"] = "Converting audio format..."
-                await self.broadcast_progress(job["job_id"])
+                elif "[ExtractAudio]" in line_str or "Destination:" in line_str:
+                    job["stage_label"] = "Converting audio format..."
+                    await self.broadcast_progress(job["job_id"])
 
         await stderr_task
         await proc.wait()

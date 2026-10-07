@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     MAX_CONCURRENT_JOBS_PER_CLIENT: int = 2
     MAX_CONCURRENT_JOBS_GLOBAL: int = 10
-    MAX_DOWNLOAD_FILE_SIZE_MB: int = 2048
+    MAX_DOWNLOAD_FILE_SIZE_MB: int = 10240  # 10 GB for 4K/60fps media
     MAX_DURATION_SECONDS: int = 14400  # 4 hours
     TEMP_DIR: str = "/tmp/downzaro_downloads"
     TEMP_FILE_TTL_SECONDS: int = 1800  # 30 minutes

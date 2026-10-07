@@ -246,6 +246,16 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
                           <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/10 text-zinc-300">
                             {fmt.ext.toUpperCase()}
                           </span>
+                          {fmt.height >= 2160 && (
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-sm tracking-wider">
+                              4K UHD
+                            </span>
+                          )}
+                          {fmt.height >= 1440 && fmt.height < 2160 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                              2K QHD
+                            </span>
+                          )}
                           {fmt.fps >= 50 && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#ef233c]/20 text-red-400">
                               {fmt.fps} FPS

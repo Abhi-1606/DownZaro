@@ -66,11 +66,12 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
     elif "tiktok" in extractor_key or "tiktok.com" in webpage_url:
         embed_url = f"https://www.tiktok.com/embed/v2/{video_id}"
 
-    # Sort formats by resolution & quality descending
+    # Sort formats by resolution, direct HTTPS protocol (avoiding slow HLS m3u8 playlists), & quality descending
     sorted_formats = sorted(
         raw_formats,
         key=lambda f: (
             f.get("height") or 0,
+            0 if str(f.get("protocol") or "").startswith("m3u8") else 1,
             f.get("fps") or 0,
             f.get("tbr") or 0
         ),
@@ -101,8 +102,21 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
 
             if height and height >= 144 and height not in seen_preview_heights:
                 seen_preview_heights.add(height)
+                if height >= 4320:
+                    q_label = "8K (4320p)"
+                elif height >= 2160:
+                    q_label = "4K (2160p)"
+                elif height >= 1440:
+                    q_label = "2K (1440p)"
+                elif height >= 1080:
+                    q_label = "1080p FHD"
+                elif height >= 720:
+                    q_label = "720p HD"
+                else:
+                    q_label = f"{height}p"
+
                 preview_streams.append({
-                    "quality": f"{height}p",
+                    "quality": q_label,
                     "height": height,
                     "url": url,
                     "fps": f.get("fps") or 30,
@@ -125,6 +139,17 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
     # Process Video Download Options
     recommended_set = False
     for f in sorted_formats:
+        vcodec = f.get("vcodec") or "none"
+        ext = f.get("ext") or "mp4"
+        protocol = f.get("protocol") or ""
+        format_note = str(f.get("format_note") or "")
+
+        # Skip non-video streams (storyboard thumbnail sheets, image formats, audio-only)
+        if ext in ("mhtml", "jpg", "jpeg", "webp", "png") or protocol == "mhtml" or "storyboard" in format_note.lower():
+            continue
+        if vcodec == "none" or vcodec == "images":
+            continue
+
         height = f.get("height")
         if not height:
             res_str = str(f.get("resolution") or f.get("format_note") or "")
@@ -135,13 +160,23 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
         if not height or height < 144:
             continue
 
-        res_label = f"{height}p"
+        if height >= 4320:
+            res_label = "8K (4320p)"
+        elif height >= 2160:
+            res_label = "4K (2160p)"
+        elif height >= 1440:
+            res_label = "2K (1440p)"
+        elif height >= 1080:
+            res_label = "1080p"
+        elif height >= 720:
+            res_label = "720p"
+        else:
+            res_label = f"{height}p"
+
         fps = f.get("fps") or 30
-        ext = f.get("ext") or "mp4"
-        vcodec = f.get("vcodec") or "unknown"
         hdr = "HDR" if f.get("dynamic_range") in ("HDR", "HDR10", "DV") or "hdr" in vcodec.lower() else None
 
-        key = (height, fps >= 50, ext == "mp4")
+        key = (height, fps >= 50)
         if key in seen_resolutions:
             continue
         seen_resolutions.add(key)
@@ -149,7 +184,7 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
         est_bytes = estimate_format_size(f, duration)
         
         is_rec = False
-        if not recommended_set and height <= 1080 and ("avc" in vcodec.lower() or "h264" in vcodec.lower() or ext == "mp4"):
+        if not recommended_set and (height == 1080 or (height == 720 and not any(f.get("height", 0) >= 1080 for f in sorted_formats))):
             is_rec = True
             recommended_set = True
 
