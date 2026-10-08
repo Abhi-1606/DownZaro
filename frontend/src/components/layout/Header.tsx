@@ -41,6 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('product');
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -68,8 +69,58 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, []);
 
+  // Track active section via scroll spy
+  useEffect(() => {
+    if (activeView === 'history') {
+      setActiveSection('history');
+      return;
+    }
+
+    const handleScroll = () => {
+      if (activeView !== 'home') return;
+
+      const scrollY = window.scrollY;
+      if (scrollY < 200) {
+        setActiveSection('product');
+        return;
+      }
+
+      // Check if user has scrolled to the bottom of the page
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 120) {
+        setActiveSection('faq');
+        return;
+      }
+
+      // In-page sections in reverse order from bottom to top
+      const sections = [
+        { id: 'faq', el: document.getElementById('faq') },
+        { id: 'how-it-works', el: document.getElementById('how-it-works') },
+        { id: 'features', el: document.getElementById('features') },
+      ];
+
+      let current = 'product';
+      for (const sec of sections) {
+        if (sec.el) {
+          const rect = sec.el.getBoundingClientRect();
+          if (rect.top <= 250) {
+            current = sec.id;
+            break;
+          }
+        }
+      }
+
+      setActiveSection(current);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeView]);
+
   const scrollToSection = (id: string) => {
     setActiveView('home');
+    setActiveSection(id);
     setMobileMenuOpen(false);
     setTimeout(() => {
       const element = document.getElementById(id);
@@ -101,6 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="cursor-pointer flex items-center"
             onClick={() => {
               setActiveView('home');
+              setActiveSection('product');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             role="button"
@@ -116,39 +168,57 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 setActiveView('home');
+                setActiveSection('product');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`text-sm font-medium transition-colors ${activeView === 'home'
-                  ? 'text-white font-semibold'
+              className={`text-sm font-medium transition-colors ${
+                activeView === 'home' && activeSection === 'product'
+                  ? 'text-[#ef233c] font-semibold'
                   : 'text-zinc-400 hover:text-white'
-                }`}
+              }`}
             >
               Product
             </button>
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              className={`text-sm font-medium transition-colors ${
+                activeView === 'home' && activeSection === 'how-it-works'
+                  ? 'text-[#ef233c] font-semibold'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
             >
               How It Works
             </button>
             <button
               onClick={() => scrollToSection('features')}
-              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              className={`text-sm font-medium transition-colors ${
+                activeView === 'home' && activeSection === 'features'
+                  ? 'text-[#ef233c] font-semibold'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
             >
               Features
             </button>
             <button
               onClick={() => scrollToSection('faq')}
-              className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              className={`text-sm font-medium transition-colors ${
+                activeView === 'home' && activeSection === 'faq'
+                  ? 'text-[#ef233c] font-semibold'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
             >
               FAQ
             </button>
             <button
-              onClick={() => setActiveView('history')}
-              className={`text-sm font-medium flex items-center gap-1.5 transition-colors ${activeView === 'history'
+              onClick={() => {
+                setActiveView('history');
+                setActiveSection('history');
+              }}
+              className={`text-sm font-medium flex items-center gap-1.5 transition-colors ${
+                activeView === 'history'
                   ? 'text-[#ef233c] font-semibold'
                   : 'text-zinc-400 hover:text-white'
-                }`}
+              }`}
             >
               <HistoryIcon className="w-3.5 h-3.5" />
               History
@@ -306,36 +376,59 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 setActiveView('home');
+                setActiveSection('product');
                 setMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="w-full text-left px-3 py-2 text-sm font-semibold rounded-lg text-white hover:bg-white/5 cursor-pointer"
+              className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
+                activeView === 'home' && activeSection === 'product'
+                  ? 'font-semibold text-[#ef233c] bg-[#ef233c]/10'
+                  : 'font-medium text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
             >
-              Home
+              Product
             </button>
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="w-full text-left px-3 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer"
+              className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
+                activeView === 'home' && activeSection === 'how-it-works'
+                  ? 'font-semibold text-[#ef233c] bg-[#ef233c]/10'
+                  : 'font-medium text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
             >
               How It Works
             </button>
             <button
               onClick={() => scrollToSection('features')}
-              className="w-full text-left px-3 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer"
+              className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
+                activeView === 'home' && activeSection === 'features'
+                  ? 'font-semibold text-[#ef233c] bg-[#ef233c]/10'
+                  : 'font-medium text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
             >
               Features
             </button>
             <button
               onClick={() => scrollToSection('faq')}
-              className="w-full text-left px-3 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer"
+              className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
+                activeView === 'home' && activeSection === 'faq'
+                  ? 'font-semibold text-[#ef233c] bg-[#ef233c]/10'
+                  : 'font-medium text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
             >
               FAQ
             </button>
             <button
               onClick={() => {
                 setActiveView('history');
+                setActiveSection('history');
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#ef233c] bg-[#ef233c]/10 cursor-pointer"
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer ${
+                activeView === 'history'
+                  ? 'font-semibold text-[#ef233c] bg-[#ef233c]/10'
+                  : 'font-medium text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
             >
               <HistoryIcon className="w-4 h-4" />
               Download History
