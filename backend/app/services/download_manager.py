@@ -217,7 +217,7 @@ class DownloadManager:
 
         format_id = job.get("format_id")
         if format_id:
-            format_spec = f"{format_id}+bestaudio/best"
+            format_spec = f"{format_id}+bestaudio/{format_id}/bestvideo+bestaudio/best"
         else:
             format_spec = "bestvideo+bestaudio/best"
 

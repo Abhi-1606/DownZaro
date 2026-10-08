@@ -54,6 +54,12 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
     return media.thumbnails.find((t) => t.is_recommended) || media.thumbnails[0] || null;
   });
 
+  React.useEffect(() => {
+    setSelectedVideo(media.video_formats.find((f) => f.is_recommended) || media.video_formats[0] || null);
+    setSelectedAudio(media.audio_formats.find((a) => a.is_recommended) || media.audio_formats[0] || null);
+    setSelectedThumb(media.thumbnails.find((t) => t.is_recommended) || media.thumbnails[0] || null);
+  }, [media]);
+
   const handleDownloadClick = () => {
     if (activeTab === 'video') {
       if (!selectedVideo) return;

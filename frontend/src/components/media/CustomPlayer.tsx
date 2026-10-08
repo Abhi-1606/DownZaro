@@ -58,7 +58,8 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
   const [isBuffering, setIsBuffering] = useState(false);
 
   // Quality Switching State
-  const [activeStreamUrl, setActiveStreamUrl] = useState<string | undefined>(streamUrl || undefined);
+  const defaultStream = (qualities && qualities.length > 0 ? qualities[0].stream_url : undefined) || streamUrl || undefined;
+  const [activeStreamUrl, setActiveStreamUrl] = useState<string | undefined>(defaultStream);
   const [selectedQuality, setSelectedQuality] = useState<string>('Auto');
   const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
   const [qualityToast, setQualityToast] = useState<string | null>(null);
@@ -75,16 +76,18 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
 
     // If explicit preview qualities provided with URLs
     if (qualities && qualities.length > 0) {
+      const topQualityLabel = qualities[0].quality;
       options.push({
         id: 'Auto',
-        label: 'Auto (Best)',
-        streamUrl: streamUrl || qualities[0].stream_url,
+        label: `Auto (Max ${topQualityLabel})`,
+        streamUrl: qualities[0].stream_url || streamUrl || undefined,
       });
 
       qualities.forEach((q) => {
         let label = q.quality;
-        if (!label.includes('4K') && !label.includes('2K') && !label.includes('HD')) {
-          if (q.height >= 2160) label = `${q.quality} (4K UHD)`;
+        if (!label.includes('8K') && !label.includes('4K') && !label.includes('2K') && !label.includes('HD')) {
+          if (q.height >= 4320) label = `${q.quality} (8K UHD)`;
+          else if (q.height >= 2160) label = `${q.quality} (4K UHD)`;
           else if (q.height >= 1440) label = `${q.quality} (2K QHD)`;
           else if (q.height >= 1080) label = `${q.quality} (Full HD)`;
           else if (q.height >= 720) label = `${q.quality} (HD)`;
@@ -99,9 +102,10 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
       });
     } else if (videoFormats && videoFormats.length > 0) {
       // If video formats provided from yt-dlp metadata
+      const topRes = videoFormats[0].resolution;
       options.push({
         id: 'Auto',
-        label: 'Auto (Best)',
+        label: `Auto (Max ${topRes})`,
         streamUrl: streamUrl || undefined,
       });
 
@@ -110,8 +114,9 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
         if (!seen.has(f.resolution) && f.height >= 144) {
           seen.add(f.resolution);
           let label = f.resolution;
-          if (!label.includes('4K') && !label.includes('2K') && !label.includes('HD')) {
-            if (f.height >= 2160) label = `${f.resolution} (4K UHD)`;
+          if (!label.includes('8K') && !label.includes('4K') && !label.includes('2K') && !label.includes('HD')) {
+            if (f.height >= 4320) label = `${f.resolution} (8K UHD)`;
+            else if (f.height >= 2160) label = `${f.resolution} (4K UHD)`;
             else if (f.height >= 1440) label = `${f.resolution} (2K QHD)`;
             else if (f.height >= 1080) label = `${f.resolution} (Full HD)`;
             else if (f.height >= 720) label = `${f.resolution} (HD)`;
@@ -127,7 +132,7 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
     } else {
       // Default fallback qualities
       options.push(
-        { id: 'Auto', label: 'Auto (Best)', streamUrl: streamUrl || undefined },
+        { id: 'Auto', label: 'Auto (Best Quality)', streamUrl: streamUrl || undefined },
         { id: '4K', label: '4K UHD (2160p)', height: 2160, streamUrl: streamUrl || undefined },
         { id: '2K', label: '2K QHD (1440p)', height: 1440, streamUrl: streamUrl || undefined },
         { id: '1080p', label: '1080p Full HD', height: 1080, streamUrl: streamUrl || undefined },
@@ -182,11 +187,12 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
     setIsPlaying(false);
     setHasStreamError(false);
     setCurrentTime(0);
-    setActiveStreamUrl(streamUrl || undefined);
+    const topStream = (qualities && qualities.length > 0 ? qualities[0].stream_url : undefined) || streamUrl || undefined;
+    setActiveStreamUrl(topStream);
     setSelectedQuality('Auto');
     setIsQualityMenuOpen(false);
     savedTimeRef.current = null;
-  }, [embedUrl, streamUrl, title]);
+  }, [embedUrl, streamUrl, title, qualities]);
 
   // Set initial timestamp if present
   useEffect(() => {
@@ -353,8 +359,33 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
         </div>
       )}
 
-      {/* 1. ACTIVE HTML5 VIDEO STREAM PLAYER (Primary) */}
-      {hasStarted && effectiveStreamUrl && !hasStreamError ? (
+      {/* 1. ACTIVE EMBEDDED IFRAME PLAYER (Prioritized when embedUrl is present e.g. YouTube/Vimeo for 100% audio & video fidelity) */}
+      {hasStarted && embedUrl ? (
+        <div className="relative w-full h-full">
+          <iframe
+            src={getEmbedSource()}
+            title={title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+          {/* Top Floating Control Bar */}
+          <div className="absolute top-2 right-2 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              onClick={() => {
+                setHasStarted(false);
+                setHasStreamError(false);
+              }}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-black/80 hover:bg-[#ef233c] backdrop-blur-md border border-white/20 hover:border-[#ef233c] flex items-center gap-1 shadow-lg transition-all cursor-pointer"
+              title="Reset to Preview Poster"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Preview</span>
+            </button>
+          </div>
+        </div>
+      ) : hasStarted && effectiveStreamUrl && !hasStreamError ? (
+        /* 2. ACTIVE HTML5 VIDEO STREAM PLAYER (For direct media / proxied streams with sound) */
         <div className="relative w-full h-full flex items-center justify-center">
           <video
             ref={videoRef}
@@ -565,31 +596,6 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
             </div>
           </div>
         </div>
-      ) : hasStarted && embedUrl ? (
-        /* 2. ACTIVE EMBEDDED IFRAME PLAYER (Fallback when stream is unavailable) */
-        <div className="relative w-full h-full">
-          <iframe
-            src={getEmbedSource()}
-            title={title}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-          />
-          {/* Top Floating Control Bar */}
-          <div className="absolute top-2 right-2 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              onClick={() => {
-                setHasStarted(false);
-                setHasStreamError(false);
-              }}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-white bg-black/80 hover:bg-[#ef233c] backdrop-blur-md border border-white/20 hover:border-[#ef233c] flex items-center gap-1 shadow-lg transition-all cursor-pointer"
-              title="Reset to Preview Poster"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Preview</span>
-            </button>
-          </div>
-        </div>
       ) : (
         /* 3. INTERACTIVE POSTER & PLAY PREVIEW TRIGGER OVERLAY (Red & White Theme) */
         <div
@@ -647,7 +653,29 @@ export const CustomPlayer: React.FC<CustomPlayerProps> = ({
             )}
             <span className="px-2.5 py-1 rounded-lg text-xs font-bold text-white bg-black/85 backdrop-blur-md border border-[#ef233c]/50 shadow-md flex items-center gap-1.5">
               <Film className="w-3.5 h-3.5 text-[#ef233c]" />
-              <span className="text-[#ef233c]">HD</span>
+              <span className="text-[#ef233c]">
+                {qualities && qualities.length > 0 && qualities[0].height
+                  ? qualities[0].height >= 4320
+                    ? '8K'
+                    : qualities[0].height >= 2160
+                    ? '4K UHD'
+                    : qualities[0].height >= 1440
+                    ? '2K QHD'
+                    : qualities[0].height >= 1080
+                    ? '1080p FHD'
+                    : `${qualities[0].height}p`
+                  : videoFormats && videoFormats.length > 0
+                  ? videoFormats[0].height >= 4320
+                    ? '8K'
+                    : videoFormats[0].height >= 2160
+                    ? '4K UHD'
+                    : videoFormats[0].height >= 1440
+                    ? '2K QHD'
+                    : videoFormats[0].height >= 1080
+                    ? '1080p FHD'
+                    : 'HD'
+                  : 'HD'}
+              </span>
             </span>
           </div>
         </div>

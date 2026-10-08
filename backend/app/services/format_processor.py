@@ -71,6 +71,7 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
         raw_formats,
         key=lambda f: (
             f.get("height") or 0,
+            1 if "mp4" in str(f.get("ext") or "").lower() or "avc" in str(f.get("vcodec") or "").lower() or "h264" in str(f.get("vcodec") or "").lower() else 0,
             0 if str(f.get("protocol") or "").startswith("m3u8") else 1,
             f.get("fps") or 0,
             f.get("tbr") or 0
@@ -94,11 +95,10 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
                 height = int(match_res.group(1))
 
         if vcodec != "none" and url:
-            if acodec != "none" and ("avc" in vcodec.lower() or "h264" in vcodec.lower() or f.get("ext") == "mp4"):
+            # Choose the highest resolution direct stream with audio for preview
+            if acodec != "none":
                 if not best_preview_url:
                     best_preview_url = url
-            elif not best_preview_url:
-                best_preview_url = url
 
             if height and height >= 144 and height not in seen_preview_heights:
                 seen_preview_heights.add(height)
@@ -123,8 +123,14 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
                     "has_audio": acodec != "none",
                 })
 
-    if not best_preview_url and raw_info.get("url"):
-        best_preview_url = raw_info.get("url")
+    # If no audio-enabled stream exists and no embed_url is available, fallback to video-only stream
+    if not best_preview_url and not embed_url:
+        for f in sorted_formats:
+            if (f.get("vcodec") or "none") != "none" and f.get("url"):
+                best_preview_url = f.get("url")
+                break
+        if not best_preview_url and raw_info.get("url"):
+            best_preview_url = raw_info.get("url")
 
     # If preview_streams is empty but best_preview_url exists, add it as default
     if not preview_streams and best_preview_url:
@@ -184,7 +190,7 @@ def process_media_formats(raw_info: Dict[str, Any]) -> Dict[str, Any]:
         est_bytes = estimate_format_size(f, duration)
         
         is_rec = False
-        if not recommended_set and (height == 1080 or (height == 720 and not any(f.get("height", 0) >= 1080 for f in sorted_formats))):
+        if not recommended_set:
             is_rec = True
             recommended_set = True
 
