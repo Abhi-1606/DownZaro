@@ -466,12 +466,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Limit Reached Callout */}
         {limitReachedNotice && (
-          <div className="mb-4 p-3 rounded-2xl bg-[#ef233c]/15 border border-[#ef233c]/40 flex items-start gap-2.5 text-xs text-red-200 animate-pulse">
-            <Sparkles className="w-4 h-4 text-[#ef233c] shrink-0 mt-0.5" />
-            <div>
-              <strong className="block font-bold text-white mb-0.5">3 Free Guest Downloads Used!</strong>
-              Sign in or create a free account to unlock unlimited 4K video and lossless audio downloads.
+          <div className="mb-4 p-3 rounded-2xl bg-[#ef233c]/15 border border-[#ef233c]/40 flex items-center justify-between gap-2.5 text-xs text-red-200">
+            <div className="flex items-start gap-2.5 flex-1">
+              <Sparkles className="w-4 h-4 text-[#ef233c] shrink-0 mt-0.5" />
+              <div>
+                <strong className="block font-bold text-white mb-0.5">3 Free Guest Downloads Used!</strong>
+                Sign in or create a free account to unlock unlimited 4K video and lossless audio downloads.
+              </div>
             </div>
+            {auth.resetGuestDownloads && (
+              <button
+                type="button"
+                onClick={async () => {
+                  await auth.resetGuestDownloads();
+                  onClose();
+                }}
+                className="text-[11px] font-medium text-zinc-300 hover:text-white underline shrink-0 cursor-pointer px-2 py-1 rounded bg-black/40 hover:bg-black/60 transition-colors"
+                title="Reset free tries for testing"
+              >
+                Reset Tries
+              </button>
+            )}
           </div>
         )}
 

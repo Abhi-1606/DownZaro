@@ -108,3 +108,33 @@ async def get_job_status(job_id: str):
         "error": job["error_message"],
         "download_url": f"/api/file/{job_id}" if job["status"] == "ready" else None,
     }
+
+
+@router.get("/api/guest-status")
+async def get_guest_status(request: Request):
+    """Returns the current guest downloads count and remaining tries for the requesting IP."""
+    ip = get_client_ip(request)
+    auth_header = request.headers.get("Authorization")
+    user = None
+    if auth_header and "Bearer " in auth_header:
+        token = auth_header.replace("Bearer ", "").strip()
+        user = auth_service.get_user_from_token(token)
+
+    if user:
+        return {"count": 0, "limit": 3, "is_authenticated": True, "remaining": -1}
+
+    count = guest_download_counts[ip]
+    return {
+        "count": count,
+        "limit": 3,
+        "is_authenticated": False,
+        "remaining": max(0, 3 - count),
+    }
+
+
+@router.post("/api/guest-reset")
+async def reset_guest_downloads(request: Request):
+    """Resets the guest download count for the requesting client IP (useful for testing)."""
+    ip = get_client_ip(request)
+    guest_download_counts[ip] = 0
+    return {"success": True, "count": 0, "limit": 3, "remaining": 3}

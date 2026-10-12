@@ -13,6 +13,7 @@ interface MediaPreviewProps {
   guestDownloadsCount?: number;
   guestLimit?: number;
   onOpenAuth?: (mode?: 'signin' | 'signup') => void;
+  onResetGuestDownloads?: () => void;
 }
 
 export const MediaPreview: React.FC<MediaPreviewProps> = ({
@@ -23,6 +24,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
   guestDownloadsCount = 0,
   guestLimit = 3,
   onOpenAuth,
+  onResetGuestDownloads,
 }) => {
   const media = info.media;
 
@@ -105,6 +107,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
             guestDownloadsCount={guestDownloadsCount}
             guestLimit={guestLimit}
             onOpenAuth={onOpenAuth}
+            onResetGuestDownloads={onResetGuestDownloads}
           />
         </div>
       </div>

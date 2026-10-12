@@ -4,6 +4,7 @@ import secrets
 import random
 from datetime import datetime, timedelta
 import logging
+from typing import Optional, Any, overload, Literal
 from app.db.database import get_pg_connection, get_sqlite_connection
 
 logger = logging.getLogger("downzaro.auth")
@@ -15,7 +16,7 @@ OTP_VALID_MINUTES = 10
 from app.services.notification_service import send_otp_email, send_otp_sms
 
 
-def hash_password(password: str, salt: str = None) -> tuple[str, str]:
+def hash_password(password: str, salt: Optional[str] = None) -> tuple[str, str]:
     if not salt:
         salt = secrets.token_hex(16)
     # Salted PBKDF2 HMAC SHA-256 with 100,000 iterations
@@ -28,7 +29,19 @@ def verify_password(password: str, stored_hash: str, salt: str) -> bool:
     return secrets.compare_digest(dk.hex(), stored_hash)
 
 
-def execute_query(query: str, params: tuple = (), fetch_one: bool = False, fetch_all: bool = False, commit: bool = False):
+@overload
+def execute_query(query: str, params: tuple = (), *, fetch_one: Literal[True], fetch_all: Literal[False] = False, commit: bool = False) -> Optional[dict[str, Any]]: ...
+
+@overload
+def execute_query(query: str, params: tuple = (), *, fetch_one: Literal[False] = False, fetch_all: Literal[True], commit: bool = False) -> list[dict[str, Any]]: ...
+
+@overload
+def execute_query(query: str, params: tuple = (), *, commit: Literal[True]) -> None: ...
+
+@overload
+def execute_query(query: str, params: tuple = (), fetch_one: bool = False, fetch_all: bool = False, commit: bool = False) -> Any: ...
+
+def execute_query(query: str, params: tuple = (), fetch_one: bool = False, fetch_all: bool = False, commit: bool = False) -> Any:
     """Executes a query against PostgreSQL in Docker with SQLite fallback."""
     pg_conn = get_pg_connection()
     if pg_conn:
@@ -39,12 +52,14 @@ def execute_query(query: str, params: tuple = (), fetch_one: bool = False, fetch
                     pg_conn.commit()
                 if fetch_one:
                     row = cur.fetchone()
-                    if row is None:
+                    if row is None or not cur.description:
                         return None
                     col_names = [desc[0] for desc in cur.description]
                     return dict(zip(col_names, row))
                 if fetch_all:
                     rows = cur.fetchall()
+                    if not cur.description:
+                        return []
                     col_names = [desc[0] for desc in cur.description]
                     return [dict(zip(col_names, r)) for r in rows]
                 return None
@@ -71,7 +86,7 @@ def execute_query(query: str, params: tuple = (), fetch_one: bool = False, fetch
         sq_conn.close()
 
 
-def find_user_by_identifier(identifier: str):
+def find_user_by_identifier(identifier: str) -> Optional[dict[str, Any]]:
     """Find user by Email, Username, or Phone Number in Credentials-DownZaro."""
     if not identifier:
         return None
@@ -86,12 +101,12 @@ def find_user_by_identifier(identifier: str):
     return execute_query(query, (clean_id, clean_id, clean_id), fetch_one=True)
 
 
-def find_user_by_id(user_id: int):
+def find_user_by_id(user_id: int) -> Optional[dict[str, Any]]:
     query = 'SELECT * FROM "Credentials-DownZaro" WHERE id = %s LIMIT 1'
     return execute_query(query, (user_id,), fetch_one=True)
 
 
-def register_user(name: str, email: str, username: str, password: str, phone: str = None):
+def register_user(name: str, email: str, username: str, password: str, phone: Optional[str] = None) -> dict[str, Any]:
     """Creates a new user in Credentials-DownZaro."""
     name = name.strip()
     email = email.strip().lower()
@@ -121,8 +136,10 @@ def register_user(name: str, email: str, username: str, password: str, phone: st
             with pg_conn.cursor() as cur:
                 cur.execute(insert_query, (name, username, email, phone, pwd_hash, salt))
                 row = cur.fetchone()
-                col_names = [desc[0] for desc in cur.description]
-                return dict(zip(col_names, row))
+                if row and cur.description:
+                    col_names = [desc[0] for desc in cur.description]
+                    return dict(zip(col_names, row))
+                raise RuntimeError("Failed to create user in PostgreSQL database.")
         finally:
             pg_conn.close()
 
@@ -136,12 +153,16 @@ def register_user(name: str, email: str, username: str, password: str, phone: st
         )
         user_id = cur.lastrowid
         sq_conn.commit()
-        return find_user_by_id(user_id)
+        if user_id is not None:
+            user = find_user_by_id(user_id)
+            if user:
+                return user
+        raise RuntimeError("Failed to create user in SQLite database.")
     finally:
         sq_conn.close()
 
 
-def authenticate_google_user(email: str, name: str = None, mode: str = "signin"):
+def authenticate_google_user(email: str, name: Optional[str] = None, mode: str = "signin") -> dict[str, Any]:
     """
     Handles Google Account sign in / sign up with strict existence checks.
     - If mode == 'signup' and user exists -> error
@@ -169,6 +190,8 @@ def authenticate_google_user(email: str, name: str = None, mode: str = "signin")
             username=unique_username,
             password=default_password
         )
+        if not new_user:
+            raise RuntimeError("Failed to create new user account.")
         new_user["is_new"] = True
         return new_user
     else:
@@ -178,7 +201,7 @@ def authenticate_google_user(email: str, name: str = None, mode: str = "signin")
         return existing
 
 
-def get_or_create_device_user(email: str, name: str = None, username: str = None):
+def get_or_create_device_user(email: str, name: Optional[str] = None, username: Optional[str] = None):
     """Retrieves existing user or creates a new user instantly for device account login."""
     email_clean = email.strip().lower()
     existing = execute_query('SELECT * FROM "Credentials-DownZaro" WHERE LOWER(email) = %s LIMIT 1', (email_clean,), fetch_one=True)
@@ -201,6 +224,8 @@ def get_or_create_device_user(email: str, name: str = None, username: str = None
         username=unique_username,
         password=default_password
     )
+    if not new_user:
+        raise RuntimeError("Failed to create new device user account.")
     new_user["is_new"] = True
     return new_user
 
@@ -287,6 +312,7 @@ def get_user_otp_channels(identifier: str, require_existing: bool = True):
                 "name": None
             }
 
+    phone_val = user.get("phone")
     return {
         "found": True,
         "name": user["name"],
@@ -294,9 +320,9 @@ def get_user_otp_channels(identifier: str, require_existing: bool = True):
         "email": user["email"],
         "masked_email": mask_email(user["email"]),
         "has_email": bool(user.get("email")),
-        "phone": user.get("phone"),
-        "masked_phone": mask_phone(user.get("phone")) if user.get("phone") else None,
-        "has_phone": bool(user.get("phone"))
+        "phone": phone_val,
+        "masked_phone": mask_phone(phone_val) if phone_val else None,
+        "has_phone": bool(phone_val)
     }
 
 
@@ -347,7 +373,7 @@ def register_passkey(user_id: int, credential_id: str, public_key: str):
     execute_query(query, (credential_id, public_key, user_id), commit=True)
 
 
-def update_user_profile(user_id: int, name: str = None, email: str = None, phone: str = None, new_password: str = None):
+def update_user_profile(user_id: int, name: Optional[str] = None, email: Optional[str] = None, phone: Optional[str] = None, new_password: Optional[str] = None) -> dict[str, Any]:
     """Updates user information in Credentials-DownZaro."""
     user = find_user_by_id(user_id)
     if not user:
@@ -383,10 +409,13 @@ def update_user_profile(user_id: int, name: str = None, email: str = None, phone
         params.append(user_id)
         execute_query(query, tuple(params), commit=True)
 
-    return find_user_by_id(user_id)
+    updated_user = find_user_by_id(user_id)
+    if not updated_user:
+        raise ValueError("User not found after update.")
+    return updated_user
 
 
-def reset_user_password(destination: str, new_password: str):
+def reset_user_password(destination: str, new_password: str) -> dict[str, Any]:
     """Resets password for an existing user matching the email, username, or phone number."""
     user = find_user_by_identifier(destination)
     if not user:
@@ -402,5 +431,8 @@ def reset_user_password(destination: str, new_password: str):
         WHERE id = %s
     '''
     execute_query(query, (pwd_hash, salt, user["id"]), commit=True)
-    return find_user_by_id(user["id"])
+    updated_user = find_user_by_id(user["id"])
+    if not updated_user:
+        raise ValueError("User not found after password reset.")
+    return updated_user
 

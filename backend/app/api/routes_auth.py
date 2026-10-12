@@ -267,7 +267,7 @@ async def get_otp_channels(payload: OtpChannelsRequestModel):
 @router.post("/otp/request")
 async def request_otp(payload: OtpRequestModel):
     """Generates and dispatches a 6-digit OTP code to the requested email (Gmail) or phone."""
-    code = auth_service.create_otp(payload.destination, payload.purpose, payload.channel or "email")
+    code = auth_service.create_otp(payload.destination, payload.purpose or "login", payload.channel or "email")
     target_label = "Gmail / Email" if (payload.channel == "email" or "@" in payload.destination) else "Mobile Number"
     
     # Check if live SMTP is configured
@@ -287,7 +287,7 @@ async def request_otp(payload: OtpRequestModel):
 @router.post("/otp/verify")
 async def verify_otp_endpoint(payload: OtpVerifyModel):
     """Verifies OTP and performs instant login or account creation."""
-    is_valid = auth_service.verify_otp(payload.destination, payload.code, payload.purpose)
+    is_valid = auth_service.verify_otp(payload.destination, payload.code, payload.purpose or "login")
     if not is_valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP code.")
 

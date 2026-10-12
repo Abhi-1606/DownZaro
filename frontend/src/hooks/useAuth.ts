@@ -43,6 +43,16 @@ export function incrementGuestDownloads(): number {
   }
 }
 
+export function resetGuestDownloads(): number {
+  try {
+    localStorage.removeItem(GUEST_DOWNLOADS_KEY);
+    localStorage.setItem(GUEST_DOWNLOADS_KEY, '0');
+    return 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function getSavedAccounts(): SavedAccount[] {
   try {
     const raw = localStorage.getItem(SAVED_ACCOUNTS_KEY);
@@ -91,6 +101,36 @@ export function useAuth() {
   const refreshGuestCount = useCallback(() => {
     setGuestCount(getGuestDownloadsCount());
   }, []);
+
+  const resetGuestDownloadsHandler = useCallback(async () => {
+    resetGuestDownloads();
+    setGuestCount(0);
+    try {
+      await fetch('/api/guest-reset', { method: 'POST' });
+    } catch {}
+  }, []);
+
+  // Synchronize guest download count with backend
+  useEffect(() => {
+    if (!token) {
+      fetch('/api/guest-status')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && typeof data.count === 'number') {
+            const local = getGuestDownloadsCount();
+            if (data.count === 0 && local > 0) {
+              // Server has 0 count (fresh backend / test reset), synchronize down
+              localStorage.setItem(GUEST_DOWNLOADS_KEY, '0');
+              setGuestCount(0);
+            } else if (data.count > local) {
+              localStorage.setItem(GUEST_DOWNLOADS_KEY, data.count.toString());
+              setGuestCount(data.count);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [token]);
 
   // Fetch current user if token exists
   const fetchCurrentUser = useCallback(async (authToken: string) => {
@@ -393,6 +433,7 @@ export function useAuth() {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
+    await resetGuestDownloadsHandler();
   };
 
   const openAuthModal = (mode: 'signin' | 'signup' | 'forgot' = 'signin') => {
@@ -417,6 +458,7 @@ export function useAuth() {
     guestLimit: GUEST_DOWNLOAD_LIMIT,
     refreshGuestCount,
     incrementGuestDownloads,
+    resetGuestDownloads: resetGuestDownloadsHandler,
     openAuthModal,
     closeAuthModal,
     setModalMode,

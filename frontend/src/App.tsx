@@ -418,6 +418,7 @@ export const App: React.FC = () => {
                   isAuthenticated={auth.isAuthenticated}
                   guestDownloadsCount={auth.guestCount}
                   guestLimit={auth.guestLimit}
+                  onResetGuestDownloads={auth.resetGuestDownloads}
                   onOpenAuth={(m) => {
                     setGuestLimitNotice(false);
                     auth.openAuthModal(m || 'signup');

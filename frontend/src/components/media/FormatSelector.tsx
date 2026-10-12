@@ -28,6 +28,7 @@ interface FormatSelectorProps {
   guestDownloadsCount?: number;
   guestLimit?: number;
   onOpenAuth?: (mode?: 'signin' | 'signup') => void;
+  onResetGuestDownloads?: () => void;
 }
 
 export const FormatSelector: React.FC<FormatSelectorProps> = ({
@@ -38,6 +39,7 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
   guestDownloadsCount = 0,
   guestLimit = 3,
   onOpenAuth,
+  onResetGuestDownloads,
 }) => {
   const [activeTab, setActiveTab] = useState<'video' | 'audio' | 'thumbnail' | 'all_in_one'>('video');
 
@@ -192,20 +194,32 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
         {!isAuthenticated ? (
           <div className="mb-4 p-3 rounded-xl bg-zinc-900/90 border border-white/10 flex items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className={`w-2 h-2 rounded-full ${guestDownloadsCount >= guestLimit ? 'bg-red-500' : 'bg-amber-400'} animate-pulse`} />
               <span className="text-zinc-300 font-medium">
                 Guest Downloads: <strong className="text-white font-bold">{Math.min(guestDownloadsCount, guestLimit)} / {guestLimit} used</strong>
               </span>
             </div>
-            {onOpenAuth && (
-              <button
-                type="button"
-                onClick={() => onOpenAuth('signup')}
-                className="text-[11px] font-bold text-[#ef233c] hover:underline cursor-pointer flex items-center gap-1"
-              >
-                Sign In for Unlimited →
-              </button>
-            )}
+            <div className="flex items-center gap-2.5">
+              {guestDownloadsCount >= guestLimit && onResetGuestDownloads && (
+                <button
+                  type="button"
+                  onClick={onResetGuestDownloads}
+                  className="text-[11px] font-medium text-zinc-400 hover:text-white underline cursor-pointer"
+                  title="Reset 3 free guest tries for testing"
+                >
+                  Reset Tries
+                </button>
+              )}
+              {onOpenAuth && (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuth('signup')}
+                  className="text-[11px] font-bold text-[#ef233c] hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  Sign In for Unlimited →
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="mb-4 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs text-emerald-400 font-medium">
